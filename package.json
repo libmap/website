@@ -1,7 +1,7 @@
 {
-  "name": "decarbnow-website",
+  "name": "libmap-website",
   "version": "1.0.0",
-  "description": "website of decarbnow",
+  "description": "website of libmap",
   "main": "webpack.config.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -9,12 +9,12 @@
     "intro": "webpack-dev-server --config webpack.config.dev.intro.js",
     "build": "rm -rf dist && webpack --config webpack.config.prod.js",
     "live-abteil": "rsync -arv -e 'ssh -p 21022' dist/ decarbnow@decarbnow.space:/var/www/html/decarbnow/live/",
-    "live": "rsync -arv dist/ --delete nebula@spica.uberspace.de:~/map2.decarbnow.space/",
+    "live": "rsync -arv --exclude='.htaccess' dist/ --delete nebula@spica.uberspace.de:~/libmap.org/",
     "dev": "rsync -arv -e 'ssh -p 21022' dist/ decarbnow@decarbnow.abteil.org:/var/www/html/decarbnow/dev/",
     "deploy": "npm run build && npm run live",
     "deploy-abteil": "npm run build && npm run live-abteil"
   },
-  "author": "decarbnow group",
+  "author": "libmap group",
   "license": "MIT",
   "devDependencies": {
     "@alexpavlov/geohash-js": "1",

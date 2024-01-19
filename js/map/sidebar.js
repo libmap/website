@@ -264,7 +264,7 @@ let sidebar = {
                 // Generate HTML for a single string URL
                 const mediaHTML = media.map((item, index) => `
                 <div id="media-${id}" style="max-width: 100%; padding: 1px;">
-                    <img src="${media[index]}" data-action="zoom"  alt="Zoom ${galleryId}" class="post-image">
+                    <img src="${media[index]}" data-action="zoom"  alt="Zoom ${galleryId}" class="post-image" onerror="this.onerror=null; this.src='https://libmap.org/static/fallback.jpg';">
                 </div>
                 `
                 ).join('');
@@ -273,7 +273,7 @@ let sidebar = {
             //style="width: 100%; height: auto; image-rendering: high-quality;"
             // Generate HTML for each media item in the array of objects
             const mediaHTML = media.map((item, index) => `
-                    <img src="${item.media_url_https}"  data-action="zoom" alt="Zoom ${galleryId}" style="width=auto;height=auto; ">
+                    <img src="${item.media_url_https}"  data-action="zoom" alt="Zoom ${galleryId}" style="width=auto;height=auto;" onerror="this.onerror=null; this.src='https://libmap.org/static/fallback.jpg';">
                 `
             ).join('');
 
@@ -292,7 +292,7 @@ let sidebar = {
         }
 
         if (tweet.account == "decarbnow") {
-            tweet.avatar = "https://pbs.twimg.com/profile_images/1661680048456310787/GAUbAfaq_200x200.jpg"
+            tweet.avatar = "https://files.mastodon.social/accounts/avatars/001/142/650/original/41b9fc47d816394c.png"
         }
 
         if (tweet.account == "ExposePolluters") {
@@ -316,7 +316,7 @@ let sidebar = {
                 <div id="${id}" class="message ${isActiveTweet ? 'active' : ''}">
                     <div class="tweet-header">
                         <div class="tweet-avatar ${isHeadTweet ? '' : 'story'}">
-                            <img src="${tweet.avatar}" id="image-${id}" onerror="this.onerror=null;this.src='https://map.decarbnow.space/static/avatar_icon.png';">
+                            <img src="${tweet.avatar}" id="image-${id}" onerror="this.onerror=null;this.src='https://libmap.org/static/avatar_icon.png';">
                         </div>
                         <div class="tweet-username">
                             <div class="display-name">${tweet.display_name ? `${tweet.display_name}` : 'Anonymous'}</div>

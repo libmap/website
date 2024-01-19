@@ -91,10 +91,15 @@ let base = {
         base.map = map('map', {
             ...defaultOptions,
         });
+        base.map.setView(defaultState.center, defaultState.zoom);
+        controls.addControls();
+        base.addControls();
+        
         api.init();
-
-        tweets.init();
         tweets.loadMarkers();
+        sidebar.init();
+        tweets.init();
+        
         twitter.init();
         base.addEventHandlers();
 
@@ -104,24 +109,12 @@ let base = {
         base.setInitialState();
     },
 
-    getState: function () {
-        return {
-            center: base.map.getCenter(),
-            zoom: base.map.getZoom(),
-            layers: base.getVisibleLayers(),
-            tweet: tweets.activeTweet,
-            account: tweets.data.account,
-            hashtag: tweets.data.hashtag,
-            polygons: tweets.data.polygons
-        }
-    },
-
-    radius_zoom: function () {
-        return radius_zoom
-    },
+    
 
     setInitialState: function () {
-        base.map.setView(defaultState.center, defaultState.zoom);
+        
+
+        
 
         let state = url.getState();
 
@@ -144,9 +137,8 @@ let base = {
                 tweets.show(tweet);
         });
 
-        base.addControls();
-        controls.addControls();
-        sidebar.init();
+        
+        
 
         // var map = L.map('map', {
         //     center: [0, 0],
@@ -166,6 +158,22 @@ let base = {
         // L.Control.MagnifyingGlass(magnifyingGlass, {
         //     forceSeparateButton: true
         // }).addTo(base.map);
+    },
+
+    getState: function () {
+        return {
+            center: base.map.getCenter(),
+            zoom: base.map.getZoom(),
+            layers: base.getVisibleLayers(),
+            tweet: tweets.activeTweet,
+            account: tweets.data.account,
+            hashtag: tweets.data.hashtag,
+            polygons: tweets.data.polygons
+        }
+    },
+
+    radius_zoom: function () {
+        return radius_zoom
     },
 
     disableMapInteraction: function () {
@@ -261,10 +269,10 @@ let base = {
 
     },
 
-    getWindowCorrectedCenter: function (center, zoom) {
-        let sidebarOffset = document.querySelector('.leaflet-sidebar').getBoundingClientRect().width;
-        return base.map.unproject(base.map.project(center, zoom).add([sidebarOffset / 2, 0]), zoom); //substract when sidebar on the left
-    },
+    // getWindowCorrectedCenter: function (center, zoom) {
+    //     let sidebarOffset = document.querySelector('.leaflet-sidebar').getBoundingClientRect().width;
+    //     return base.map.unproject(base.map.project(center, zoom).add([sidebarOffset / 2, 0]), zoom); //substract when sidebar on the left
+    // },
 
     showSidebar: function (module, content = null) {
         let sbs = [tweets]
@@ -595,7 +603,7 @@ let base = {
                 icon: 'nf nf-fa-share',               // and define its properties
                 title: 'Share Link',      // like its title
                 onClick: function (btn, map) {       // and its callback
-                    let url_path = new URL('https://map.decarbnow.space' + url.getPath())
+                    let url_path = new URL('https://libmap.org' + url.getPath())
                     let pathSegments = url_path.pathname.split('/').filter(segment => !segment.startsWith('t='));
                     url_path.pathname = pathSegments.join('/');
                     let modifiedUrl = url_path.href;
