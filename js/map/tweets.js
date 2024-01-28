@@ -517,12 +517,6 @@ let manager = {
                     marker.openPopup();
                     manager.flashSidebarElement(id);
                 })
-
-                marker.on('mouseout', function () {
-                    // Close the popup when the mouse leaves the marker
-                    //marker.closePopup();
-                    manager.removeFlash(id);
-                });
                 
                 manager.data.tweetIdToMarker[id] = marker                
 
