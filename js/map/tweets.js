@@ -481,7 +481,7 @@ let manager = {
                 const activateButton = document.createElement("button");
                 activateButton.classList.add("activate-button"); // Adds a class to the button
 
-                activateButton.innerHTML = "Activate";
+                activateButton.innerHTML = "View";
 
                 activateButton.onclick = function () {
                     manager.show(id);
