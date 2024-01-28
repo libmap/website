@@ -16,6 +16,7 @@ import 'leaflet-minimap';
 import 'leaflet.locatecontrol';
 import sidebar from './sidebar.js';
 import api from './api/proxy.js';
+import search from './search.js';
 
 let GeoJSON = require('geojson');
 
@@ -88,10 +89,25 @@ let base = {
 
     init: function () {
         // init leaflet map
+        
+        let state = url.getState();
+
+        
+        if (!state.center && state.center !== 0) {
+            state.center = defaultState.center;
+            state.zoom = defaultState.zoom;
+        }
+
+
         base.map = map('map', {
             ...defaultOptions,
         });
-        base.map.setView(defaultState.center, defaultState.zoom);
+
+        base.map.setView(state.center, state.zoom);
+
+        
+        
+        
         controls.addControls();
         base.addControls();
         
@@ -106,36 +122,33 @@ let base = {
         base.layerSets = layerSets;
         base.layers = layers;
 
-        base.setInitialState();
+        base.setInitialState(state);
     },
 
     
 
-    setInitialState: function () {
+    setInitialState: function (state) {
         
-
+        let path = url.getPath()
         
-
-        let state = url.getState();
-
-        if (!state.center) {
-            state.center = defaultState.center
-        }
         base.setState({ ...defaultState, ...state });
 
         let tweet = state.tweet;
 
         $(tweets).on("loaded", function () {
             if (!state.tweet) {
-                let path = url.getPath()
-
                 if (path in tweets.data.pathToTweetId)
                     tweet = tweets.data.pathToTweetId[path];
             }
 
             if (tweet)
                 tweets.show(tweet);
+
+            
+            base.map.invalidateSize();
         });
+
+        
 
         
         
@@ -200,6 +213,7 @@ let base = {
         base.pushState = false;
 
         base.flyTo(state);
+
         $(base.map).one('moveend', function () {
 
             // $(tweets).on("loaded", function () {
@@ -726,14 +740,14 @@ let base = {
             //base.magnifyingGlass.setLatLng = base.map.getCenter()
         });
 
-        base.map.on("contextmenu", function (e) {
-            //base.tweetBoxActive = true;
-            //tweets.closeSidebar();
-            base.map.flyTo(e.latlng);
-            //twitter.showTweetBox(e);
-            //let class_ch = document.querySelector('.crosshair')
-            //class_ch.classList.add('hidden')
-        });
+        // base.map.on("contextmenu", function (e) {
+        //     //base.tweetBoxActive = true;
+        //     //tweets.closeSidebar();
+        //     base.map.flyTo(e.latlng);
+        //     //twitter.showTweetBox(e);
+        //     //let class_ch = document.querySelector('.crosshair')
+        //     //class_ch.classList.add('hidden')
+        // });
 
         base.map.on("zoomend", function () {
             base.updateCircleSize()
@@ -746,11 +760,13 @@ let base = {
             //sidebar.back(false,false);
             tweets.closeSidebar()
             sidebar.clearSearch();
-            sidebar.displayTweets('', 1, false);
+            //sidebar.displayTweets('', 1, false);
             sidebar.currentPage = 1
+            
             //base.slowFlyTo = false;
             twitter.marker.remove();
             twitter.controlwindow.hide();
+            search.displayInitialSearchedTerms()
         });
 
         base.map.on('baselayerchange overlayadd overlayremove', function (e) {

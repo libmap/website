@@ -8,7 +8,6 @@
     <meta name="twitter:description" content="Community-driven map to pinpoint posts">
     <meta name="twitter:title" content="This location on libmap">
     <meta property="og:image" content="<%= htmlWebpackPlugin.options.environment.url.list.live %>/static/preview.jpg">
-    <link rel="manifest" href="manifest.json">
     <meta name="viewport" content="width=device-width, initial-scale=0.6, maximum-scale=1, user-scalable=no" />
 </head>
 
@@ -23,8 +22,9 @@
             
             <div class="search-container">
                 <input type="text" id="term-search" placeholder="Filter: #hashtag @account" />
-                <button class="clear-btn">Clear</button>
+                
             </div>
+            <div id="searched-terms-container"></div>
             <div id="tweets" class="tweet-container"></div>
             <button class="top-btn" onclick="sidebar.scrollTo({top: 0, behavior: 'smooth'});">Top</button>
 

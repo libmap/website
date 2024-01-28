@@ -9,6 +9,7 @@ import api from './api/proxy.js';
 import twitter from './twitter.js';
 import './scripts/embed-post.js';
 import sidebar from './sidebar.js';
+import search from './search.js';
 
 
 
@@ -200,6 +201,7 @@ let manager = {
     invisibleMarker: function () {
         $('.marker-pin').removeClass('visible-after');
         $('.fab.fa-twitter').removeClass('visible-after');
+        $('.fab.fa-mastodon').removeClass('visible-after');
     },
 
     deactivateMarkers: function () {
@@ -364,10 +366,12 @@ let manager = {
         //sidebar.scrollTop = 0;
         //clearSearch();
         //console.log(previousTweetId)
+        
 
         //document.getElementById('sidebar').scrollTop = 0;
         url.pushState();
         base.showLayer("tweets");
+        
         let class_ch = document.querySelector('.crosshair')
         class_ch.classList.add('hidden')
         class_ch.classList.remove('hidden')
@@ -452,10 +456,10 @@ let manager = {
 
                 let marker;
                 if (tweetInfo.source == "mastodon.social") {
-                    marker = L.marker(tweetInfo.state.center, { icon: icons['transition'], opacity: tweetOpacity });
+                    marker = L.marker(tweetInfo.state.center, { icon: icons['transition']});
                     
                 } else if (tweetInfo.source == "𝕏/Twitter") {
-                    marker = L.marker(tweetInfo.state.center, { icon: icons['climateaction'], opacity: tweetOpacity });
+                    marker = L.marker(tweetInfo.state.center, { icon: icons['climateaction']});
                 }
               
 
@@ -464,15 +468,93 @@ let manager = {
 
                 //base.map.addLayer(manager.clusters);
                 marker.addTo(base.layerSets.tweets.layers.tweets)
-                marker.on('click', function () {
+
+                const div = document.createElement("div");
+                div.innerHTML = '<table class="styled-table"><thead>' +
+                    '<tr><td style="width:80x">Post from:</td><td>' + tweetInfo.display_name + '</td></tr>' +
+                    '<tbody>' +
+                    '<tr><td style="width:80px">Account:</td><td><a href="/@' + tweetInfo.account + '">@' + tweetInfo.account + '</a></td></tr>' +
+                    '<tr><td style="width:80px">Source:</td><td>' + tweetInfo.source + '</td></tr>' +
+                    '<tr><td style="width:80px">Timestamp:</td><td>' + tweetInfo.timestamp + '</td></tr>' +
+                    '</tbody></table>';
+
+                const activateButton = document.createElement("button");
+                activateButton.classList.add("activate-button"); // Adds a class to the button
+
+                activateButton.innerHTML = "Activate";
+
+                activateButton.onclick = function () {
+                    manager.show(id);
+                }
+
+                div.appendChild(activateButton);
+
+                //return L.marker(latlng).bindPopup(div);
+                marker.bindPopup(div)
+
+                marker.on('dblclick', function () {
                     manager.show(id)
                 })
+
+                // marker.on('popupopen', function() {
+                //     let class_ch = document.querySelector('.crosshair')
+                //     class_ch.classList.add('hidden')
+                // })
+
+                marker.on('popupclose', function() {
+                    manager.removeFlash(id);
+                })
+                
+
+                // marker.on('mouseover', function () {
+                //     sidebar.scrollToTweet(id, 'smooth', 'center')
+                //     marker.openPopup();
+                //     manager.flashSidebarElement(id);
+                // })
+
+                marker.on('click', function () {
+                    sidebar.scrollStartOrCenter(id, 'smooth')
+                    marker.openPopup();
+                    manager.flashSidebarElement(id);
+                })
+
+                marker.on('mouseout', function () {
+                    // Close the popup when the mouse leaves the marker
+                    //marker.closePopup();
+                    manager.removeFlash(id);
+                });
+                
                 manager.data.tweetIdToMarker[id] = marker                
 
             });
             $(manager).trigger('loaded');
         })
     },
+
+    flashSidebarElement: function (id) {
+        var sidebarElement = document.getElementById(id);
+        if (sidebarElement) {
+            // Add a class to change the background color
+            sidebarElement.classList.add('flash');
+    
+            // Remove the class after a short delay (e.g., 500 milliseconds)
+            // setTimeout(function () {
+            //     sidebarElement.classList.remove('flash');
+            // }, 3000);
+        }
+    },
+
+    removeFlash: function (id) {
+        var sidebarElement = document.getElementById(id);
+            var sidebarElement = document.getElementById(id);
+            if (sidebarElement) {
+                // Add a class to change the background color     
+                // Remove the class after a short delay (e.g., 500 milliseconds)
+                sidebarElement.classList.remove('flash');
+            }
+
+    },
+    
 
     addEventHandlers: function () {
         manager.controlwindow.on("hide", function (e) {

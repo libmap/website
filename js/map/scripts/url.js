@@ -5,23 +5,21 @@ let url = {
     prefix: '/map',
     keyValueDivider: '=',
     specialKeys: ['@', '~', '#'],
-    pathDivider: '/',
     listDivider: ',',
     mainDivider: '?', // Change the main divider to '?'
     secondaryDivider: '&', // Add a secondary divider for subsequent parameters
-    geohashSymbol: '#',
-    geoHash: false,
+    geoHash: true,
 
     _stateToUrl: function(s) {
         let lng = parseFloat(s.center.lng).toFixed(5),
             lat = parseFloat(s.center.lat).toFixed(5),
             layers = s.layers.filter(e => e !== 'empty');
-    
+
         let vars = {
-            ls: layers.join(url.listDivider),
             z: s.zoom,
+            ls: layers.join(url.listDivider),
         };
-    
+
         if (!url.geoHash) {
             vars = {
                 ...vars,
@@ -29,65 +27,33 @@ let url = {
                 lat: lat,
             };
         }
-        
-    
+
         if (s.polygons) {
             vars.polygons = s.polygons;
         }
-    
-        let geoHashPart = url.geoHash ? `#${encode(lat, lng)}` : '';
-    
-        // Initialize specialKeysParts array
-        let specialKeysParts = [];
-        
-    
-        // Add '@account' and '~hashtag' to specialKeysParts if they exist
-        if (s.account) {
-            specialKeysParts.push(`@${s.account}`);
-        }
-        if (s.hashtag) {
-            specialKeysParts.push(`~${s.hashtag}`);
-        }
 
+        let geoHashPart = url.geoHash ? `#${encode(lat, lng)}` : '';
         
-    
         let parts = Object.keys(vars).map(k => {
             return [k, vars[k]].join(url.specialKeys.includes(k) ? '' : url.keyValueDivider);
         });
 
-        let specialKeysFinal = specialKeysParts.length > 0 ? '/' + specialKeysParts.join(url.pathDivider) : '';
-        // Join specialKeysParts with url.pathDivider and append the rest of the URL
-        return specialKeysFinal + url.prefix + geoHashPart + url.mainDivider + parts.join(url.secondaryDivider);
+        return url.prefix + geoHashPart + url.mainDivider + parts.join(url.secondaryDivider);
     },
-    
-    
 
     _urlToState: function(path) {
+        console.log(path)
+        let pathWithoutPrefix = path.startsWith(url.prefix) ? path.slice(url.prefix.length) : path;
 
-        let firstSplit = path.split(url.pathDivider);
-
-
-        // Flat map to split each part by url.mainDivider
-        let finalSplit = firstSplit.flatMap(part => part.split(url.mainDivider));
-
-
-        //let pathWithoutPrefix = path.startsWith(url.prefix) ? path.slice(url.prefix.length) : path;
-        
-
-        //let parts = pathWithoutPrefix.split(url.divider);
-        // Split by url.mainDivider first
-        // Split first by url.divider
-        // Split by url.secondaryDivider
+        let parts = pathWithoutPrefix.split(url.mainDivider);
+        if(parts[1]){
+            //parts = parts[1].split(url.secondaryDivider)
+        }
+            
 
 
-
-
-        
         let rs = {};
-        finalSplit.forEach((n) => {
-            // Replace "map#" with "#"
-            n = n.replace(/^map#/, '#');
-
+        parts.forEach((n) => {
             if (url.specialKeys.includes(n.charAt(0))) {
                 rs[n.charAt(0)] = n.slice(1);
             } else {
@@ -96,9 +62,9 @@ let url = {
                     let v = n.split(url.keyValueDivider);
                     rs[v[0]] = v[1];
                 });
+                
             }
         });
-
         
         let s = {};
 
@@ -127,21 +93,21 @@ let url = {
         // if (rs.t)
         //     s.tweet = rs.t;
 
-        if (rs['@']) {
-            s.account = rs['@'];
-        }
+        if (rs.a)
+            s.account = rs.a;
 
-        if (rs['~']) {
-            s.hashtag = rs['~'];
-        }
+        if (rs.h)
+            s.hashtag = rs.h;
 
         if (rs.polygons)
             s.polygons = rs.polygons;
-        
+
+
         return s;
     },
 
     pushState: function(state = null) {
+
         if (!state)
             state = base.getState();
 
@@ -158,10 +124,7 @@ let url = {
     },
 
     getPath: function() {
-        let domain = window.location.origin;
-        let remainingURL = window.location.href.slice(domain.length);
-        return(remainingURL)
-        //return window.location.pathname;
+        return window.location.pathname;
     },
 }
 

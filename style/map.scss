@@ -100,6 +100,7 @@ img {
 }
 
 
+
 @media screen and (min-width: 768px) {
 
     #map {
@@ -177,6 +178,36 @@ img {
     color: #646464;
 }
 
+#search-term-containner {
+    position: relative;
+    margin-bottom: 10px;
+    width: 90%;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.searched-term-box {
+    padding: 4px;
+    border: 1px solid #555;
+    border-radius: 4px;
+    //background-color: #e43f3f;
+    display: inline-block;
+    margin-left: 10px;
+    margin-right: 5px; /* Optional: Add some space between the boxes */
+}
+
+.search-tag {
+    display: inline-block;
+    margin-right: 5px;
+    background-color: #e0e0e0;
+    padding: 3px 8px;
+    border-radius: 5px;
+}
+
+.remove-term-btn {
+    cursor: pointer;
+    margin-left: 2px;
+}
 
 .tweet-icon {
     font-size: 24px;
@@ -265,7 +296,20 @@ img {
     pointer-events:none;
 }
 
+.flash {
+    animation: blinker 1s linear infinite;
+}
 
+@keyframes blinker {
+    50% {
+        background-color: rgb(226, 229, 230);
+        border-right: 2px solid rgb(92, 92, 92); /* Add a black border around the content */
+        //border-radius: 4px;
+        border-top-right-radius: 0px !important;
+        border-bottom-right-radius: 0px !important;
+        border-color: #0060df;
+    }
+}
 
 .message.active {
     //background-color: #f5f5f5;
@@ -301,7 +345,10 @@ img {
     cursor: pointer;
     background-color: #4CAF50;
     color: white;
-    padding: 10px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    padding-left: 20px;
+    padding-right: 20px;
     border: none;
     border-radius: 4px;
     cursor: pointer;
@@ -317,7 +364,10 @@ img {
     cursor: pointer;
     background-color: #4CAF50;
     color: white;
-    padding: 10px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    padding-left: 20px;
+    padding-right: 20px;
     border: none;
     border-radius: 4px;
     cursor: pointer;
@@ -346,12 +396,33 @@ img {
     background-color: #45a049;
 }
 
+.activate-button {
+    cursor: pointer;
+    background-color: #4CAF50;
+    color: white;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    padding-left: 20px;
+    padding-right: 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.3s;
+}
+
+.activate-button:hover {
+    background-color: #45a049;
+}
 
 .navigation-button {
     cursor: pointer;
     background-color: #4CAF50;
     color: white;
-    padding: 10px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    padding-left: 20px;
+    padding-right: 20px;
     border: none;
     border-radius: 4px;
     cursor: pointer;

@@ -1,6 +1,13 @@
 import api from './api/proxy.js';
 import tweets from './tweets.js';
 import 'zoom-vanilla.js'
+import url from './url.js';
+import search from './search.js';
+import { map, icon, Marker } from 'leaflet';
+import 'leaflet-control-geocoder';
+import './geoip.js';
+import './marker/control.js';
+import { layerSets, layers } from './layers/sets.js';
 
 let tweetData = null;
 let visibleTweets = 10;
@@ -35,40 +42,11 @@ document.getElementById('back-button').addEventListener('click', function () {
     //sidebar.clearSearch();
     sidebar.displayTweets('', sidebar.currentPage, true);
     base.tweetBoxActive = false;
-    
+
     let lastId = history[history.length - 1]; // Get last id
     sidebar.scrollToHeadTweet(lastId)
 });
 
-// Function to handle the search
-function handleSearch() {
-    var searchTerm = document.getElementById('term-search').value;
-    // Implement your search logic here, possibly using filterTweetsByAccount or similar
-    document.getElementById('tweets').innerHTML = ''; // Clear previous tweets
-    sidebar.displayTweets(searchTerm);
-    // Update the display based on the search term
-}
-
-// Function to clear the search
-function clearSearch() {
-    sidebar.clearSearch()
-    sidebar.displayTweets('', 1, true);
-    // Clear the results or reset the display
-    // Update the display to show all tweets again
-}
-
-// Event listener for the search input
-document.addEventListener('DOMContentLoaded', (event) => {
-    var searchInput = document.getElementById('term-search');
-    if (searchInput) {
-        searchInput.addEventListener('input', handleSearch); // or 'change' if you want to search on field change
-    }
-
-    var clearButton = document.querySelector('.clear-btn');
-    if (clearButton) {
-        clearButton.addEventListener('click', clearSearch);
-    }
-});
 
 let tweetDataPromise;
 
@@ -88,16 +66,17 @@ let sidebar = {
             });
         });
         
+
         tweetDataPromise.then(function (data) {
             console.log("Data is available now");
             tweetData = data;
-        
+
             const idFromUrl = tweets.activeTweet;
-        
+
             if (!idFromUrl) {
                 sidebar.displayTweets();
             }
-        
+    
         }).catch(function (error) {
             console.error('Error with data loading:', error);
             // Handle the error appropriately
@@ -139,40 +118,47 @@ let sidebar = {
     //     });
     // },
 
-    scrollToHeadTweet: async function (id, delay = 0) {
+    scrollToHeadTweet: async function (id, speed = 'instant', position = 'start') {
         try {
             const tweetData = await tweetDataPromise; // Assuming you need data from the promise
 
             const lastElement = document.getElementById(sidebar.getHeadTweetById(id, tweetData));
-            const loadingMessage = document.getElementById('loading-message');
-
-            if (loadingMessage) {
-                loadingMessage.style.display = 'block';
-            }
 
             if (lastElement) {
-                setTimeout(function () {
-                    lastElement.scrollIntoView({
-                        block: 'start',
-                        behavior: 'instant'
-                    });
-                    if (loadingMessage) {
-                        loadingMessage.style.display = 'none';
-                    }
-                }, delay); // Delay might be needed to wait for tweets to load
+                lastElement.scrollIntoView({
+                    block: position,
+                    behavior: speed
+                });
             } else {
                 const sidebarElement = document.getElementById('sidebar'); // Replace 'sidebar' with the actual ID or class of your sidebar element
                 if (sidebarElement) {
                     sidebarElement.scrollTop = 0;
                 }
-                if (loadingMessage) {
-                    loadingMessage.style.display = 'none';
-                }
+
             }
         } catch (error) {
             console.error('Error waiting for tweet data:', error);
         }
     },
+
+    scrollToTweet: async function (id, speed = 'instant', position = 'start') {
+        try {
+            sidebar.scrollStartOrCenter(id, speed);
+            // const tweetElement = document.getElementById(id);
+
+            // if (tweetElement) {
+            //     tweetElement.scrollIntoView({
+            //         block: position,
+            //         behavior: speed
+            //     });
+
+            // }
+        } catch (error) {
+            console.error('Error scrolling to tweet:', error);
+        }
+    },
+
+
 
     selectTweet: async function (id) {
         // Presumably, 'history' is a custom object or API you're using
@@ -193,8 +179,8 @@ let sidebar = {
         //searchTerm = id;
         //document.getElementById('tweets').innerHTML = '';
 
-        await this.displayTweets(id);  
-        
+        await this.displayTweets(id);
+
         // Wait for tweet images to load before scrolling
         const images = document.querySelectorAll('.post-image');
         await Promise.all(Array.from(images).map(img => {
@@ -207,16 +193,22 @@ let sidebar = {
             });
         }));
 
-        const headlineElement = document.getElementById(id);
-        if (headlineElement) {
-            let tweetHeight = headlineElement.getBoundingClientRect().height;
+        sidebar.scrollStartOrCenter(id);
+
+    },
+
+    scrollStartOrCenter: function(id, speed = 'instant'){
+        const d = document.getElementById(id);
+        if (d) {
+            let d_height = d.getBoundingClientRect().height;
             let sidebarHeight = document.getElementById('sidebar').clientHeight;
-            const blockProp = tweetHeight > sidebarHeight ? 'start' : 'center';
-            headlineElement.scrollIntoView({
+            const blockProp = d_height > sidebarHeight ? 'start' : 'center';
+            d.scrollIntoView({
                 block: blockProp,
-                behavior: 'smooth'
+                behavior: speed
             });
         }
+
     },
 
     extractHeadTweets: function (tweets) {
@@ -284,7 +276,7 @@ let sidebar = {
         let isActiveTweet = id === tweets.activeTweet;
 
         div.className = `tweet-container ${isHeadTweet ? 'story-head' : 'story-indent'} ${isActiveTweet ? 'active' : ''}`;
-    
+
         if (tweet.content != null & tweet.source != "mastodon.social") {
             formatTweetContent(tweet)
         } else {
@@ -320,7 +312,7 @@ let sidebar = {
                         </div>
                         <div class="tweet-username">
                             <div class="display-name">${tweet.display_name ? `${tweet.display_name}` : 'Anonymous'}</div>
-                            <div class="account-name">@${tweet.account ? `${tweet.account}` : 'anon'}</div>
+                            <div class="account-name"><a href="/@${tweet.account}">@${tweet.account ? `${tweet.account}` : 'anon'}</a></div>
                         </div>
                     </div>
 
@@ -336,11 +328,10 @@ let sidebar = {
                         </div>
                     ` : ''}
 
-                    <div class="message-footnote"><a href="${link}" target="_blank"> @${tweet.source}, ${tweet.timestamp ? `${tweet.timestamp}` : '1970-01-01 12:00:00'}</a></div>
+                    <div class="message-footnote"><a href="${link}"> @${tweet.source}, ${tweet.timestamp ? `${tweet.timestamp}` : '1970-01-01 12:00:00'}</a></div>
                 </div>
             </div>
         `;
-
         if (!isActiveTweet) {
             // Add a click event listener to call manager.show(id) when the container is clicked
             div.addEventListener('click', function () {
@@ -384,6 +375,25 @@ let sidebar = {
         });
     },
 
+    filterTweetsByAccountAndHashtag: function (tweets, account, hashtag) {
+        const headTweets = sidebar.extractHeadTweets(tweets);
+        return headTweets.filter(([id, tweet]) => {
+            const storyTweets = sidebar.getTweetsOfStory(tweets, id);
+            const hasMatchingAccount = (
+                tweet.account.toLowerCase() === account.toLowerCase() ||
+                storyTweets.some(([, storyTweet]) => storyTweet.account.toLowerCase() === account.toLowerCase())
+            );
+
+            const hasMatchingHashtag = (
+                tweet.hashtags.map(h => h.toLowerCase()).includes(hashtag.toLowerCase()) ||
+                storyTweets.some(([, storyTweet]) => storyTweet.hashtags.map(h => h.toLowerCase()).includes(hashtag.toLowerCase()))
+            );
+
+            return hasMatchingAccount && hasMatchingHashtag;
+        });
+    },
+
+
     getHeadTweetById: function (id, tweets) {
         // Convert the tweets object to an array and iterate over it 
         for (const [tweetId, tweet] of Object.entries(tweets)) {
@@ -416,31 +426,53 @@ let sidebar = {
 
     displayTweets: async function (searchTerm = '', page = 1, centerMap = false) {
         try {
-            const tweetData = await tweetDataPromise; // Assuming you need data from the promise
+            const tweetData = await tweetDataPromise;
+            let state = url.getState();
 
+            if (state.hashtag && !searchTerm) {
+                searchTerm = '#' + state.hashtag;
+            }
+
+            if (state.account && !searchTerm) {
+                searchTerm = '@' + state.account;
+            }
             const tweetsContainer = document.getElementById('tweets');
             let filteredTweets;
 
             if (searchTerm.startsWith('#')) {
                 // Hashtag search
-                centerMap = true
-                tweets.data.hashtag = searchTerm.slice(1)
-                //let state = base.getState()
-                //state.hashtag = searchTerm.slice(1)
-                //base.setState(state);
-                filteredTweets = sidebar.filterTweetsByHashtag(tweetData, searchTerm.slice(1));
+                centerMap = true;
+                tweets.data.hashtag = searchTerm.slice(1);
+                // Update state with hashtag
+                // ...
+
+                if (state.account) {
+                    // Both account and hashtag are present, filter by both
+                    filteredTweets = sidebar.filterTweetsByAccountAndHashtag(tweetData, state.account, searchTerm.slice(1));
+                } else {
+                    // Only hashtag is present, filter by hashtag
+                    filteredTweets = sidebar.filterTweetsByHashtag(tweetData, searchTerm.slice(1));
+                }
             } else if (searchTerm.startsWith('@')) {
-                centerMap = true
-                tweets.data.account = searchTerm.slice(1)
-                //let state = base.getState()
-                //state.account = searchTerm.slice(1)
-                //base.setState(state);
-                filteredTweets = sidebar.filterTweetsByAccount(tweetData, searchTerm.slice(1));
+                // Account search
+                centerMap = true;
+                tweets.data.account = searchTerm.slice(1);
+                // Update state with account
+                // ...
+
+                if (state.hashtag) {
+                    // Both account and hashtag are present, filter by both
+                    filteredTweets = sidebar.filterTweetsByAccountAndHashtag(tweetData, searchTerm.slice(1), state.hashtag);
+                } else {
+                    // Only account is present, filter by account
+                    filteredTweets = sidebar.filterTweetsByAccount(tweetData, searchTerm.slice(1));
+                }
             } else if (searchTerm) {
                 // ID search
-                centerMap = false
+                centerMap = false;
                 filteredTweets = sidebar.filterTweetsById(tweetData, searchTerm);
             } else {
+                // No specific search term, show default tweets
                 filteredTweets = sidebar.extractHeadTweets(tweetData);
             }
 
@@ -451,7 +483,7 @@ let sidebar = {
 
             const headTweetsToDisplay = filteredTweets.slice(startIndex, startIndex + tweetsPerPage);
 
-
+            
 
             if (page === 1) {
                 sidebar.hideID('prev-button')
@@ -472,14 +504,23 @@ let sidebar = {
             tweetsContainer.innerHTML = '';
             tweets.invisibleMarker();
             let tweetsToDisplay = []
+
+            let markers = []; // Use let to declare the markers array
             // Append new tweets instead of clearing and re-rendering all tweets
             headTweetsToDisplay.forEach(([id, tweet]) => {
-
+                let marker = tweets.data.tweetIdToMarker[id.toString()];
+                if (marker) { // Check if the marker exists before pushing
+                    markers.push(marker);
+                }
                 tweetsToDisplay.push(id)
                 tweets.visibleMarker(id);
                 tweetsContainer.appendChild(sidebar.createTweetElement(id, tweet, true));
                 const storyTweets = sidebar.getTweetsOfStory(tweetData, id);
                 storyTweets.forEach(([storyId, storyTweet]) => {
+                    let marker = tweets.data.tweetIdToMarker[storyId.toString()];
+                    if (marker) { // Check if the marker exists before pushing
+                        markers.push(marker);
+                    }
                     tweetsToDisplay.push(storyId)
                     tweets.visibleMarker(storyId);
                     tweetsContainer.appendChild(sidebar.createTweetElement(storyId, storyTweet, false));
@@ -488,6 +529,26 @@ let sidebar = {
             if (centerMap) {
                 tweets.centerAroundMarkers(tweetsToDisplay)
             }
+            
+            if (markers.length > 0) {
+                let group = new L.featureGroup(markers); 
+                
+                // Get the layers in the group
+                let layers = group.getLayers();
+                let totalLayers = layers.length;
+            
+                // Iterate over the layers in reversed order
+                layers.forEach(function(layer, index) {
+                    // Calculate the zIndexOffset for the current layer
+                    let zIndexOffset = (totalLayers - index) * 1000;
+                    
+                    // Set the zIndexOffset for the layer
+                    layer.setZIndexOffset(zIndexOffset);
+                });
+            }
+            
+            
+            
         } catch (error) {
             console.error('Error waiting for tweet data:', error);
         }
@@ -523,7 +584,7 @@ let sidebar = {
 
         if (goToTweet) {
             let lastId = history[history.length - 1]; // Get last id
-            sidebar.scrollToHeadTweet(lastId, 500)
+            sidebar.scrollToHeadTweet(lastId)
         } else {
             let sidebarElement = document.getElementById('sidebar');
             if (sidebarElement) {
@@ -534,11 +595,16 @@ let sidebar = {
     },
 
     clearSearch: function () {
-               
+        // let state = url.getState();
+        // if ('account' in state) {
+        //     delete state.account;
+        // }
+
+
         tweets.data.account = null
         tweets.data.hashtag = null
-        
-        
+
+
         const searchInput = document.getElementById('term-search');
         searchInput.value = '';
         searchInput.dispatchEvent(new Event('input'));

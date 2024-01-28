@@ -31,7 +31,7 @@ Object.keys(iconsInfo).forEach((k) => {
         className: 'custom-div-icon',
         html: `<div class='marker-pin ${i.cssname}'></div><i class='${i.fonticon} ${i.cssname}'></i>`,
         iconSize: [20, 34],
-        iconAnchor: [10, 10]
+        iconAnchor: [10, 10],
     });
 });
 
