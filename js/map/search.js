@@ -71,16 +71,31 @@ function removeSearchedTerm(term, event) {
                 // Remove the account from the state
                 delete state.account;
                 delete tweets.data.account
+                if(state.hashtag){
+                    sidebar.hashtagToIdsDisplay(state.hashtag, true)
+                } else {
+                    base.visibleTweetIds = base.initVisibleTweetIds
+                    sidebar.displayTweetsbyIds()
+                }
             } else if (term.startsWith('#')) {
                 // Remove the hashtag from the state
                 delete state.hashtag;
                 delete tweets.data.hashtag
+                if(state.account){
+                    sidebar.accountToIdsDisplay(state.account, true)
+                } else {
+                    base.visibleTweetIds = base.initVisibleTweetIds
+                    sidebar.displayTweetsbyIds()
+                }
             }
 
             url.pushState(state);
+            sidebar.hideID('back-button')
+            sidebar.displayTweetsbyIds(null, 1);
+            base.stateBefore = null
 
-
-            sidebar.displayTweets('', 1, true);
+            tweets.closeSidebar()
+            
 
             //base.setState()
 
@@ -100,7 +115,13 @@ function handleSearch(event) {
         var searchTerm = document.getElementById('term-search').value;
         // Implement your search logic here, possibly using filterTweetsByAccount or similar
         document.getElementById('tweets').innerHTML = ''; // Clear previous tweets
-        sidebar.displayTweets(searchTerm);
+        if (searchTerm.startsWith('@')){
+            sidebar.accountToIdsDisplay(searchTerm.slice(1))
+        }
+
+        if (searchTerm.startsWith('#')){
+            sidebar.hashtagToIdsDisplay(searchTerm.slice(1))
+        }
 
         // Display the searched term as a box
         displaySearchedTerm(searchTerm);
@@ -143,7 +164,7 @@ document.addEventListener('DOMContentLoaded', function () {
 // Function to clear the search
 function clearSearch() {
     sidebar.clearSearch()
-    sidebar.displayTweets('', 1, true);
+    sidebar.displayTweetsbyIds(null, 1);
     // Clear the results or reset the display
     // Update the display to show all tweets again
 }

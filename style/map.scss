@@ -47,7 +47,8 @@ img {
   }
 
 #map {
-    height: 50vh;
+    height: calc(50vh - env(safe-area-inset-top, 0));
+    top: env(safe-area-inset-top, 0); /* Adjusts for mobile status bar */
     width: 100vw;
     position: absolute;
     z-index: 83;
@@ -57,16 +58,16 @@ img {
     padding: 0px;
     box-sizing: border-box;
     overflow: hidden;
-    top: 0;
     left: 0;
     /* Align the left side of the map with the left side of the viewport */
     box-shadow: 0px 3px 3px rgba(0, 0, 0, 0.85);
 }
 
 #sidebar {
-    top: 50vh;
+    top: calc(50vh);
     width: 100vw;
-    height: calc(100vh - 50vh);
+    //bottom: env(safe-area-inset-bottom, 0);
+    height: calc(100vh - 55vh);
     z-index: 80;
     background-color: #fff;
     color: #000;
@@ -107,7 +108,10 @@ img {
         width: calc(100vw - 350px);
         /* Adjust the width of the map */
         //min-width: calc(100vw - 40vw);
-        height: 100vh !important;
+        // height: 100vh !important;
+        height: calc(100vh - env(safe-area-inset-top, 0));
+        top: env(safe-area-inset-top, 0); /* Adjusts for mobile status bar */
+        //top: 0;
         background-color: #fff;
         /* Set the background color */
         color: #000;
@@ -120,7 +124,6 @@ img {
         overflow: hidden;
         /* Hide overflow content */
 
-        top: 0;
         /* Align the top of the map with the top of the viewport */
         left: 0;
         /* Align the left side of the map with the left side of the viewport */
@@ -215,13 +218,25 @@ img {
     margin-right: 10px;
     margin-top: 3px;
 }
+@keyframes flash {
+    0% { opacity: 0; }
+    50% { opacity: 1; }
+    100% { opacity: 0; }
+  }
 
 .tweet-container {
     font-size: 16px;
     margin-top: 10px;
     position: relative; /* Needed for the pseudo-element */
-    transition: background-color 0.3s;
+    animation: fadeIn 1s;
+
+  
 }
+
+@keyframes fadeIn {
+    0% { opacity: 0; }
+    100% { opacity: 1; }
+  }
 
 
 .tweet-container .story-head {
@@ -360,8 +375,9 @@ img {
     background-color: #45a049;
 }
 
-.back-btn {
+#back-button {
     cursor: pointer;
+    display: none;
     background-color: #4CAF50;
     color: white;
     padding-top: 5px;
@@ -375,17 +391,19 @@ img {
     transition: background-color 0.3s;
 }
 
-.back-btn:hover {
+#back-button:hover {
     background-color: #45a049;
 }
 
 #prev-button {
-    width: 80px;
+    width: 100px;
+    display: none;
     transition: background-color 0.3s;
 }
 
 #next-button {
-    width: 80px;
+    width: 100px;
+    display: none;
     transition: background-color 0.3s;
 }
 
@@ -417,6 +435,7 @@ img {
 
 .navigation-button {
     cursor: pointer;
+    //visibility: hidden;
     background-color: #4CAF50;
     color: white;
     padding-top: 5px;

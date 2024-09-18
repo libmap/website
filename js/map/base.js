@@ -17,6 +17,8 @@ import 'leaflet.locatecontrol';
 import sidebar from './sidebar.js';
 import api from './api/proxy.js';
 import search from './search.js';
+import 'protomaps-leaflet';
+import { PMTiles, leafletRasterLayer } from 'pmtiles';
 
 let GeoJSON = require('geojson');
 
@@ -58,11 +60,14 @@ let defaultOptions = {
     zoomControl: false,
     tap: true,
     maxZoom: 19,
-    touchZoom: 'center',
+    //touchZoom: 'center',
     //drawControl: true
 }
 
-let popupoptions = { maxWidth: 700 }
+let popupoptions = { 
+    maxWidth: 700,
+    autoPan: false 
+ }
 
 L.Circle.include({
     contains: function (latLng) {
@@ -82,7 +87,11 @@ let base = {
     externalJSON: false,
     pushState: false,
     stateArray: [],
+    markersOnMap: {},
+    visibleTweetIds: [],
+    initVisibleTweetIds: [],
     validJsonUrl: false,
+    stateBefore: null,
     magnifyingGlass: null,
     country_n: 4,
     editableLayers: new L.FeatureGroup(),
@@ -144,8 +153,8 @@ let base = {
             if (tweet)
                 tweets.show(tweet);
 
+            //base.checkMarkersWithinBounds();
             
-            base.map.invalidateSize();
         });
 
         
@@ -216,23 +225,16 @@ let base = {
 
         $(base.map).one('moveend', function () {
 
-            // $(tweets).on("loaded", function () {
-                
-            // });
-
-            base.showLayers(state.layers);
+            //base.showLayers(state.layers); //needed?
             base.pushState = true;
-            url.pushState();
+            //url.pushState(); //needed?
 
             if (state.account) {
-                tweets.data.account = state.account
-                sidebar.displayTweets("@" + state.account);
-                
+                sidebar.accountToIdsDisplay(state.account)                
             }
 
             if (state.hashtag) {
-                tweets.data.hashtag = state.hashtag
-                sidebar.displayTweets("#" + state.hashtag);
+                sidebar.hashtagToIdsDisplay(state.hashtag);
                 
             }
 
@@ -516,6 +518,47 @@ let base = {
     },
 
     addControls: function () {
+
+
+        // Define a custom control
+        const SearchControl = L.Control.extend({
+            onAdd: function(map) {
+                const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
+                
+                // Add custom CSS to center the button at the top
+                container.style.position = 'absolute';
+                container.style.top = '5px'; // Adjust the top position as needed
+                container.style.left = '30vW';
+                container.style.width = '250px';
+                //container.style.transform = 'translateX(-50%)';
+                container.style.zIndex = '1000'; // Ensure it's above other map elements
+
+                const button = L.DomUtil.create('button', '', container);
+                button.innerHTML = 'Search messages in this area';
+                button.style.width = '246px'
+
+                // Define the button click event handler
+                button.onclick = function() {
+                    let ids = base.getVisibleTweetIds(base.map);
+                    ids = ids.filter(id => base.visibleTweetIds.includes(id));
+                    // Handle the search functionality here
+                    //alert('Searching messages in this area...');
+                    sidebar.displayTweetsbyIds(ids)
+                };
+
+                return container;
+            },
+            onRemove: function(map) {
+                // Nothing to do here
+            }
+        });
+
+        // Create an instance of the custom control
+        const searchControl = new SearchControl({ position: 'topleft' }); // Set position to topleft
+
+        // Add the control to the map
+        searchControl.addTo(base.map);
+
         let drawOptions = {
             position: 'bottomleft',
             draw: {
@@ -604,9 +647,12 @@ let base = {
 
         let miniMap = new L.Control.MiniMap(layerSets.baseTiles.layers.satellite_minimap, {
             position: "bottomright",
+            collapsedWidth: 30,
+            collapsedHeight: 30,
             zoomLevelOffset: -6,
-            toggleDisplay: false,
-            minimized: false,
+            toggleDisplay: true,
+            //autoToggleDisplay: true,
+            minimized: true,
             width: 180,
             height: 180,
         }).addTo(base.map);
@@ -650,8 +696,8 @@ let base = {
                     sidebar.currentPage = 1
                     
                     base.setState({ ...defaultState });
-                    
-                    sidebar.displayTweets('', 1, true);
+                    base.stateBefore = null
+                    sidebar.displayTweetsbyIds(base.initVisibleTweetIds, 1);
                     base.tweetBoxActive = false;
                     
                 }
@@ -661,6 +707,31 @@ let base = {
         homeButton.setPosition('bottomright').addTo(base.map);
     },
 
+    getVisibleMarkers: function (map) {
+        var markerList = [];
+        map.eachLayer(function(layer) {
+            if (layer instanceof L.Marker && map.getBounds().contains(layer.getLatLng())) {
+                markerList.push(layer);
+            }
+        });
+        return markerList;
+    },
+    
+    getVisibleTweetIds: function (map) {
+        var tweetIds = [];
+        map.eachLayer(function(layer) {
+            if (layer instanceof L.Marker && map.getBounds().contains(layer.getLatLng())) {
+                // Retrieve the tweet ID from the marker's options
+                var tweetId = layer.options.tweetId;
+                // Push the tweet ID to the tweetIds array
+                tweetIds.push(tweetId);
+            }
+        });
+        return tweetIds;
+    },
+    
+    
+
     addEventHandlers: function () {
         base.map.on(L.Draw.Event.CREATED, function (e) {
             base.showLayer("polygons")
@@ -668,7 +739,9 @@ let base = {
                 layer = e.layer;
 
             if (type === 'marker') {
-                layer.bindPopup('A popup!');
+                layer.bindPopup('A popup!', {
+                    autoPan: false
+                });
             }
 
             //Remove loaded JSON first
@@ -709,6 +782,11 @@ let base = {
             // base.stateArray.forEach((item, i) => {
             //     base.showLayer(item)
             // });
+            //$(tweets).trigger('loaded');
+            //base.markersOnMap = base.getVisibleTweetIds(base.map)
+            //console.log(base.markersOnMap)
+            //sidebar.displayTweets();
+
             if (base.pushState) {
                 url.pushState()
             }
@@ -761,7 +839,8 @@ let base = {
             tweets.closeSidebar()
             sidebar.clearSearch();
             //sidebar.displayTweets('', 1, false);
-            sidebar.currentPage = 1
+            //sidebar.currentPage = 1
+            //sidebar.displayTweetsbyIds()
             
             //base.slowFlyTo = false;
             twitter.marker.remove();

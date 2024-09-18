@@ -165,17 +165,17 @@ let manager = {
             var actionPin = marker._icon.querySelector('.marker-pin.action');
             var transitionPin = marker._icon.querySelector('.marker-pin.transition');
             var fabElement = marker._icon.querySelector('.fab');
-        
+
             // If the action pin exists, add the 'visible-after' class to it
             if (actionPin) {
                 L.DomUtil.addClass(actionPin, 'visible-after');
             }
-        
+
             // If the transition pin exists, add the 'visible-after' class to it
             if (transitionPin) {
                 L.DomUtil.addClass(transitionPin, 'visible-after');
             }
-        
+
             // Assuming you also want to add the 'visible-after' class to the .fab element
             if (fabElement) {
                 L.DomUtil.addClass(fabElement, 'visible-after');
@@ -221,6 +221,9 @@ let manager = {
         let tweetInfo = manager.data.tweets[id];
 
         let state = { ...tweetInfo.state };
+
+        if(base.stateBefore === null)
+            base.stateBefore = base.getState()
 
         base.setState(state);
         //manager.openSidebar(id)
@@ -366,12 +369,12 @@ let manager = {
         //sidebar.scrollTop = 0;
         //clearSearch();
         //console.log(previousTweetId)
-        
+
 
         //document.getElementById('sidebar').scrollTop = 0;
         url.pushState();
         base.showLayer("tweets");
-        
+
         let class_ch = document.querySelector('.crosshair')
         class_ch.classList.add('hidden')
         class_ch.classList.remove('hidden')
@@ -456,12 +459,17 @@ let manager = {
 
                 let marker;
                 if (tweetInfo.source == "mastodon.social") {
-                    marker = L.marker(tweetInfo.state.center, { icon: icons['transition']});
-                    
+                    marker = L.marker(tweetInfo.state.center, {
+                        icon: icons['transition'],
+                        tweetId: id
+                    });
+
                 } else if (tweetInfo.source == "𝕏/Twitter") {
-                    marker = L.marker(tweetInfo.state.center, { icon: icons['climateaction']});
+                    marker = L.marker(tweetInfo.state.center, { 
+                        icon: icons['climateaction'],
+                        tweetId: id });
                 }
-              
+
 
                 //manager.clusters.addLayer(marker);
 
@@ -490,7 +498,9 @@ let manager = {
                 div.appendChild(activateButton);
 
                 //return L.marker(latlng).bindPopup(div);
-                marker.bindPopup(div)
+                marker.bindPopup(div, {
+                    autoPan: false
+                });
 
                 marker.on('dblclick', function () {
                     manager.show(id)
@@ -501,10 +511,10 @@ let manager = {
                 //     class_ch.classList.add('hidden')
                 // })
 
-                marker.on('popupclose', function() {
+                marker.on('popupclose', function () {
                     manager.removeFlash(id);
                 })
-                
+
 
                 // marker.on('mouseover', function () {
                 //     sidebar.scrollToTweet(id, 'smooth', 'center')
@@ -517,8 +527,8 @@ let manager = {
                     marker.openPopup();
                     manager.flashSidebarElement(id);
                 })
-                
-                manager.data.tweetIdToMarker[id] = marker                
+
+                manager.data.tweetIdToMarker[id] = marker
 
             });
             $(manager).trigger('loaded');
@@ -530,7 +540,7 @@ let manager = {
         if (sidebarElement) {
             // Add a class to change the background color
             sidebarElement.classList.add('flash');
-    
+
             // Remove the class after a short delay (e.g., 500 milliseconds)
             // setTimeout(function () {
             //     sidebarElement.classList.remove('flash');
@@ -540,15 +550,15 @@ let manager = {
 
     removeFlash: function (id) {
         var sidebarElement = document.getElementById(id);
-            var sidebarElement = document.getElementById(id);
-            if (sidebarElement) {
-                // Add a class to change the background color     
-                // Remove the class after a short delay (e.g., 500 milliseconds)
-                sidebarElement.classList.remove('flash');
-            }
+        var sidebarElement = document.getElementById(id);
+        if (sidebarElement) {
+            // Add a class to change the background color     
+            // Remove the class after a short delay (e.g., 500 milliseconds)
+            sidebarElement.classList.remove('flash');
+        }
 
     },
-    
+
 
     addEventHandlers: function () {
         manager.controlwindow.on("hide", function (e) {
