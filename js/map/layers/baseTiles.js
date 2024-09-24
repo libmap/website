@@ -20,10 +20,9 @@ let layersList = {
     },
     esri: {
         layer: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-            attribution: '© <a href="https://www.esri.com/">Esri</a>, '+
-                             'i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community, '+
-                             '<a href="https://disc.gsfc.nasa.gov/datasets/OMNO2d_003/summary?keywords=omi">NASA</a>, '+
-                             '<a href="https://earth.esa.int/web/guest/missions/esa-eo-missions/sentinel-5p">ESA/Copernicus</a>',
+            attribution: '© <a href="https://www.esri.com/">Esri</a>, ' +
+                         'USGS, NASA, ESA, ' +
+                         'GE, Getmapping, Community',
             maxZoom: 20,
         }),
         name: 'Esri Satellite'
@@ -51,10 +50,10 @@ let layersList = {
     },
     terrain: {
         layer: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Terrain_Base/MapServer/tile/{z}/{y}/{x}', {
-          attribution: 'Tiles &copy; Esri &mdash; Source: US National Park Service, '+
+          attribution: 'Tiles &copy; Esri &mdash; S: US NPS, '+
                            '© <a href="https://carto.com/attribution">CARTO</a>, '+
                            '<a href="https://disc.gsfc.nasa.gov/datasets/OMNO2d_003/summary?keywords=omi">NASA</a>, '+
-                           '<a href="https://earth.esa.int/web/guest/missions/esa-eo-missions/sentinel-5p">ESA/Copernicus</a>',
+                           '<a href="https://earth.esa.int/web/guest/missions/esa-eo-missions/sentinel-5p">ESA</a>',
             maxZoom: 20,
             subdomains:['mt0','mt1','mt2','mt3']
         }),
@@ -62,10 +61,10 @@ let layersList = {
     },
     dark: {
         layer: L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png', {
-          attribution: 'Tiles &copy; Esri &mdash; Source: US National Park Service, '+
+          attribution: 'Tiles &copy; Esri &mdash; S: US NPS, '+
                            '© <a href="https://carto.com/attribution">CARTO</a>, '+
                            '<a href="https://disc.gsfc.nasa.gov/datasets/OMNO2d_003/summary?keywords=omi">NASA</a>, '+
-                           '<a href="https://earth.esa.int/web/guest/missions/esa-eo-missions/sentinel-5p">ESA/Copernicus</a>',
+                           '<a href="https://earth.esa.int/web/guest/missions/esa-eo-missions/sentinel-5p">ESA</a>',
             maxZoom: 20,
             subdomains:['mt0','mt1','mt2','mt3']
         }),
@@ -85,16 +84,26 @@ let layersList = {
     // },
     nightlight: {
        layer: L.tileLayer('https://map1.vis.earthdata.nasa.gov/wmts-webmerc/VIIRS_CityLights_2012/default/2012/GoogleMapsCompatible_Level8/{z}/{y}/{x}.jpg', {
-         attribution: 'Tiles &copy; <a href="https://earthdata.nasa.gov" target="_blank">ESDIS</a> with funding provided by NASA/HQ,'+
+         attribution: 'Tiles &copy; <a href="https://earthdata.nasa.gov" target="_blank">ESDIS</a> funded by NASA/HQ,'+
                           '© <a href="https://carto.com/attribution">CARTO</a>, '+
                           '<a href="https://disc.gsfc.nasa.gov/datasets/OMNO2d_003/summary?keywords=omi">NASA</a>, '+
-                          '<a href="https://earth.esa.int/web/guest/missions/esa-eo-missions/sentinel-5p">ESA/Copernicus</a>',
+                          '<a href="https://earth.esa.int/web/guest/missions/esa-eo-missions/sentinel-5p">ESA</a>',
            maxZoom: 14,
            maxNativeZoom: 8,
            subdomains:['mt0','mt1','mt2','mt3']
        }),
        name: 'Night Lights'
     },
+    nimbo: {
+        layer: L.tileLayer('https://prod-data.nimbo.earth/mapcache-free/tms/1.0.0/latest@kermap/{z}/{x}/{-y}.png', {
+          attribution: 'Tiles &copy; <a href="https://nimbo.earth/" target="_blank">Nimbo by Kermap</a>',
+            maxZoom: 16,
+            maxNativeZoom: 16,
+            subdomains:['mt0','mt1','mt2','mt3']
+        }),
+        name: 'Nimbo'
+     },
+    
     // s2maps23: {
     //     layer: L.tileLayer('https://s2maps-tiles.eu/wmts?layer=s2cloudless-2023_3857&style=default&tilematrixset=GoogleMapsCompatible&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image%2Fjpeg&TileMatrix={z}&TileCol={x}&TileRow={y}', {
     //         attribution: '<a href="https://s2maps.eu">Sentinel-2 cloudless - https://s2maps.eu</a> by <a href="https://eox.at">EOX IT Services GmbH</a> (Copernicus 2020)',

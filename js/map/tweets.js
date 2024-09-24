@@ -492,7 +492,38 @@ let manager = {
                 activateButton.innerHTML = "View";
 
                 activateButton.onclick = function () {
+                    
                     manager.show(id);
+
+                    const sidebar = document.getElementById('sidebar');
+                    const mapElement = document.getElementById('map');
+                    const toggleButton = document.getElementById('toggleSidebar');
+                    
+                    // Toggle 'minimized' class on sidebar
+                    //sidebar.classList.toggle('minimized');
+                    
+
+                    
+                    // Move button down when the sidebar is minimized
+                    if (sidebar.classList.contains('minimized')) {
+                        sidebar.classList.toggle('minimized');
+                        mapElement.classList.toggle('expanded');
+                        toggleButton.innerHTML = '&#x2715;'
+                        toggleButton.classList.remove('minimized'); // Move button back up
+                    } 
+
+                    setTimeout(() => {
+                        // Update Leaflet map size
+                        if (base.map) {
+                            base.map.invalidateSize();
+                        }
+            
+                
+                        // Trigger a resize event if needed
+                        window.dispatchEvent(new Event('resize'));
+                    }, 500);
+
+
                 }
 
                 div.appendChild(activateButton);

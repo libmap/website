@@ -23,17 +23,18 @@ let controls = {
             { label: 'Terrain', layer: layerSets.baseTiles.layers.terrain, radioGroup: 'baselayers' },
             { label: 'Dark', layer: layerSets.baseTiles.layers.dark, radioGroup: 'baselayers' },
             //{ label: 'World Population', layer: layerSets.baseTiles.layers.worldpop, radioGroup: 'baselayers' },
-            { label: 'Night Lights', layer: layerSets.baseTiles.layers.nightlight, radioGroup: 'baselayers' }
+            { label: 'Night Lights', layer: layerSets.baseTiles.layers.nightlight, radioGroup: 'baselayers' },
+            { label: 'Nimbo (latest)', layer: layerSets.baseTiles.layers.nimbo, radioGroup: 'baselayers' }
           //   { label: 'Yearly Satellite',
           //     collapsed: true,
           //     children: [
-          //       { label: 'Sentinel-2 2023 (EOX)', layer: layerSets.baseTiles.layers.s2maps23, radioGroup: 'baselayers' },
-          //       { label: 'Sentinel-2 2022 (EOX)', layer: layerSets.baseTiles.layers.s2maps22, radioGroup: 'baselayers' },
-          //       { label: 'Sentinel-2 2021 (EOX)', layer: layerSets.baseTiles.layers.s2maps21, radioGroup: 'baselayers' },
-          //       { label: 'Sentinel-2 2020 (EOX)', layer: layerSets.baseTiles.layers.s2maps20, radioGroup: 'baselayers' },
-          //       { label: 'Sentinel-2 2019 (EOX)', layer: layerSets.baseTiles.layers.s2maps19, radioGroup: 'baselayers' },
+          //       // { label: 'Sentinel-2 2023 (EOX)', layer: layerSets.baseTiles.layers.s2maps23, radioGroup: 'baselayers' },
+          //       // { label: 'Sentinel-2 2022 (EOX)', layer: layerSets.baseTiles.layers.s2maps22, radioGroup: 'baselayers' },
+          //       // { label: 'Sentinel-2 2021 (EOX)', layer: layerSets.baseTiles.layers.s2maps21, radioGroup: 'baselayers' },
+          //       // { label: 'Sentinel-2 2020 (EOX)', layer: layerSets.baseTiles.layers.s2maps20, radioGroup: 'baselayers' },
+          //       // { label: 'Sentinel-2 2019 (EOX)', layer: layerSets.baseTiles.layers.s2maps19, radioGroup: 'baselayers' },
           //       { label: 'Sentinel-2 2018 (EOX)', layer: layerSets.baseTiles.layers.s2maps18, radioGroup: 'baselayers' },
-          //       //{ label: 'Sentinel-2 (2017, EOX)', layer: layerSets.baseTiles.layers.s2maps17, radioGroup: 'baselayers' },
+          //       { label: 'Sentinel-2 2017 (EOX)', layer: layerSets.baseTiles.layers.s2maps17, radioGroup: 'baselayers' },
           //       { label: 'Sentinel-2 2016 (EOX)', layer: layerSets.baseTiles.layers.s2maps16, radioGroup: 'baselayers' },
           // ]}
             //{ label: 'Disabled', layer: layerSets.baseTiles.layers.empty },
@@ -43,7 +44,7 @@ let controls = {
 
       let overlaysTree = [
           {
-              label: 'Posts',
+              label: 'Messages',
               layer: layerSets.tweets.layers.tweets,
           },
           {

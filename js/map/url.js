@@ -137,7 +137,7 @@ let url = {
 
         if (rs.polygons)
             s.polygons = rs.polygons;
-        
+
         return s;
     },
 

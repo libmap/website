@@ -67,7 +67,27 @@ let defaultOptions = {
 let popupoptions = { 
     maxWidth: 700,
     autoPan: false 
- }
+}
+
+
+document.getElementById('toggleSidebar').addEventListener('click', function () {
+    setTimeout(() => {
+        // Update Leaflet map size
+        // if (base.map) {
+        //     base.map.invalidateSize();
+        // }
+
+        // if (base.minimap && base.minimap._map) {
+        //     base.minimap._map.invalidateSize();  // Adjust minimap's size and position
+        // }
+
+        // Force a slight scroll to trigger the address bar to show (for mobile devices)
+        // window.scrollTo(0, 0);  // Scroll to the top of the page
+
+        // Trigger a resize event if needed
+        window.dispatchEvent(new Event('resize'));
+    }, 500);
+});
 
 L.Circle.include({
     contains: function (latLng) {
@@ -90,6 +110,7 @@ let base = {
     markersOnMap: {},
     visibleTweetIds: [],
     initVisibleTweetIds: [],
+    miniMap: null,
     validJsonUrl: false,
     stateBefore: null,
     magnifyingGlass: null,
@@ -101,7 +122,6 @@ let base = {
         
         let state = url.getState();
 
-        
         if (!state.center && state.center !== 0) {
             state.center = defaultState.center;
             state.zoom = defaultState.zoom;
@@ -114,7 +134,7 @@ let base = {
 
         base.map.setView(state.center, state.zoom);
 
-        
+        //base.map.attributionControl.setPrefix('')
         
         
         controls.addControls();
@@ -139,7 +159,7 @@ let base = {
     setInitialState: function (state) {
         
         let path = url.getPath()
-        
+
         base.setState({ ...defaultState, ...state });
 
         let tweet = state.tweet;
@@ -225,9 +245,9 @@ let base = {
 
         $(base.map).one('moveend', function () {
 
-            //base.showLayers(state.layers); //needed?
+            base.showLayers(state.layers); //needed?
             base.pushState = true;
-            //url.pushState(); //needed?
+            url.pushState(); //needed?
 
             if (state.account) {
                 sidebar.accountToIdsDisplay(state.account)                
@@ -519,40 +539,38 @@ let base = {
 
     addControls: function () {
 
-
-        // Define a custom control
         const SearchControl = L.Control.extend({
             onAdd: function(map) {
                 const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
                 
-                // Add custom CSS to center the button at the top
-                container.style.position = 'absolute';
-                container.style.top = '5px'; // Adjust the top position as needed
-                container.style.left = '30vW';
-                container.style.width = '250px';
-                //container.style.transform = 'translateX(-50%)';
+                // Add custom CSS to center the button horizontally
+                container.style.position = 'fixed';
+                container.style.top = '0px'; // Adjust the top position if needed
+                container.style.left = '50%'; // Center horizontally based on the container
+                container.style.transform = 'translateX(-50%)'; // Adjust position to be centered
+                container.style.width = '175px'; // Set width of the container
                 container.style.zIndex = '1000'; // Ensure it's above other map elements
-
+        
                 const button = L.DomUtil.create('button', '', container);
-                button.innerHTML = 'Search messages in this area';
-                button.style.width = '246px'
-
+                button.innerHTML = 'Search messages in view';
+                button.style.width = '171px'; // Set width of the button to fit inside container
+        
                 // Define the button click event handler
                 button.onclick = function() {
                     let ids = base.getVisibleTweetIds(base.map);
                     ids = ids.filter(id => base.visibleTweetIds.includes(id));
                     // Handle the search functionality here
                     //alert('Searching messages in this area...');
-                    sidebar.displayTweetsbyIds(ids)
+                    sidebar.displayTweetsbyIds(ids);
                 };
-
+        
                 return container;
             },
             onRemove: function(map) {
                 // Nothing to do here
             }
         });
-
+        
         // Create an instance of the custom control
         const searchControl = new SearchControl({ position: 'topleft' }); // Set position to topleft
 
@@ -645,7 +663,7 @@ let base = {
         let drawControl = new L.Control.Draw(drawOptions);
         base.map.addControl(drawControl);
 
-        let miniMap = new L.Control.MiniMap(layerSets.baseTiles.layers.satellite_minimap, {
+        base.miniMap = new L.Control.MiniMap(layerSets.baseTiles.layers.satellite_minimap, {
             position: "bottomright",
             collapsedWidth: 30,
             collapsedHeight: 30,
@@ -653,8 +671,8 @@ let base = {
             toggleDisplay: true,
             //autoToggleDisplay: true,
             minimized: true,
-            width: 180,
-            height: 180,
+            width: 230,
+            height: 150,
         }).addTo(base.map);
 
         let shareUrlButton = L.easyButton({
@@ -733,6 +751,10 @@ let base = {
     
 
     addEventHandlers: function () {
+        base.miniMap.on('restore', function() {
+            window.dispatchEvent(new Event('resize'));
+        });
+
         base.map.on(L.Draw.Event.CREATED, function (e) {
             base.showLayer("polygons")
             var type = e.layerType,

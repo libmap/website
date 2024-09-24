@@ -24,7 +24,7 @@ document.getElementById('next-button').addEventListener('click', function () {
     sidebar.displayTweetsbyIds(null, sidebar.currentPage);
     let sidebarElement = document.getElementById('sidebar');
     if (sidebarElement) {
-        sidebarElement.scrollTop = 0;
+        document.documentElement.scrollTop = 0;
     }
 });
 
@@ -35,7 +35,7 @@ document.getElementById('prev-button').addEventListener('click', function () {
     }
     let sidebarElement = document.getElementById('sidebar');
     if (sidebarElement) {
-        sidebarElement.scrollTop = 0;
+        document.documentElement.scrollTop = 0;
     }
 });
 
@@ -94,43 +94,52 @@ let sidebar = {
         });
     },
 
+    getSidebarTopPosition: function() {
+        const sidebarElement = document.getElementById('sidebar');
+    
+        if (sidebarElement) {
+            // Get the position of the sidebar relative to the viewport
+            const sidebarRect = sidebarElement.getBoundingClientRect();
+    
+            // Calculate the top position relative to the page by adding the current scroll offset
+            const sidebarTop = sidebarRect.top + window.scrollY;
+    
+            return sidebarTop;
+        } else {
+            console.error('Sidebar element not found!');
+            return null;
+        }
+    },
+
     scrollToHeadTweet: async function (id, speed = 'instant', position = 'start') {
         try {
             const tweetData = await tweetDataPromise; // Assuming you need data from the promise
-    
             const lastElement = document.getElementById(sidebar.getHeadTweetById(id, tweetData));
-            const sidebarElement = document.getElementById('sidebar'); 
     
-            if (lastElement && sidebarElement) {
-                // Get the dimensions and positions
-                const lastElementRect = lastElement.getBoundingClientRect();
+            if (lastElement) {
+                // Get the position of the lastElement relative to the page
+                const elementRect = lastElement.getBoundingClientRect();
+                const offsetTop = elementRect.top + window.scrollY; // Element's position in the page
+                
+
+                // Get the top position of the sidebar relative to the document
+                const sidebarElement = document.getElementById('sidebar');
                 const sidebarRect = sidebarElement.getBoundingClientRect();
+                const sidebarTop = sidebarRect.top + window.scrollY;
+
+                // Determine the scroll behavior
+                const scrollBehavior = speed === 'smooth' ? 'smooth' : 'auto';
                 
-                // Calculate scroll position
-                let scrollTop;
-                // const elementHeight = lastElementRect.height;
-                // const sidebarHeight = sidebarRect.height;
-                
-                // if (elementHeight > sidebarHeight) {
-                //     // When the element is taller than the sidebar
-                    
-                // } else {
-                //     // When the element fits within the sidebar
-                //     scrollTop = lastElementRect.top - sidebarRect.top + sidebarElement.scrollTop;// - (sidebarHeight / 2 - elementHeight / 2);
-                // }
-                scrollTop = lastElementRect.top - sidebarRect.top + sidebarElement.scrollTop;
-                // Apply scrolling with behavior
-                sidebarElement.scrollTo({
-                    top: scrollTop,
-                    behavior: speed // 'instant' or 'smooth'
+                // Scroll to the calculated position
+                window.scrollTo({
+                    top: offsetTop - sidebarTop,
+                    behavior: scrollBehavior
                 });
             } else {
-                // Reset scroll position if the element is not found
+                const sidebarElement = document.getElementById('sidebar'); 
                 if (sidebarElement) {
-                    sidebarElement.scrollTo({
-                        top: 0,
-                        behavior: speed // 'instant' or 'smooth'
-                    });
+                    // Scroll to the top if the element doesn't exist
+                    sidebarElement.scrollTop = 0;
                 }
             }
         } catch (error) {
@@ -138,7 +147,6 @@ let sidebar = {
         }
     },
     
-
     scrollToTweet: async function (id, speed = 'instant', position = 'start') {
         try {
             sidebar.scrollStartOrCenter(id, speed);
@@ -189,6 +197,7 @@ let sidebar = {
     scrollStartOrCenter: function(id, speed = 'instant') {
         const d = document.getElementById(id);
         const sidebar = document.getElementById('sidebar');
+        //const app = document.getElementById('app');
         
         if (d && sidebar) {
             // Get dimensions and positions
@@ -199,7 +208,11 @@ let sidebar = {
             let scrollTop;
             const dHeight = dRect.height;
             const sidebarHeight = sidebarRect.height;
-            
+            console.log(dRect.top)
+            console.log(sidebarRect.top)
+            console.log(sidebar.scrollTop)
+
+
             if (dHeight > sidebarHeight) {
                 // When the content is taller than the sidebar
                 scrollTop = dRect.top - sidebarRect.top + sidebar.scrollTop;
@@ -207,9 +220,10 @@ let sidebar = {
                 // When the content fits within the sidebar
                 scrollTop = dRect.top - sidebarRect.top + sidebar.scrollTop - (sidebarHeight / 2 - dHeight / 2);
             }
-            
+            console.log(scrollTop)
+            console.log(document.body.clientHeight)
             // Apply scrolling with behavior
-            sidebar.scrollTo({
+            document.documentElement.scrollTo({
                 top: scrollTop,
                 behavior: speed // 'instant' or 'smooth'
             });
@@ -261,7 +275,7 @@ let sidebar = {
                 // Generate HTML for a single string URL
                 const mediaHTML = media.map((item, index) => `
                 <div id="media-${id}" style="max-width: 100%; padding: 1px;">
-                    <img src="${media[index]}" data-action="zoom"  alt="Zoom ${galleryId}" class="post-image" onerror="this.onerror=null; this.src='https://libmap.org/static/fallback.jpg';">
+                    <img src="${media[index]}" data-action="zoom"  alt="Zoom ${galleryId}" class="post-image" style="max-height: 120px;" onerror="this.onerror=null; this.src='https://libmap.org/static/fallback.jpg';">
                 </div>
                 `
                 ).join('');
