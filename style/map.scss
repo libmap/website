@@ -17,11 +17,21 @@
 @import '../node_modules/leaflet.locatecontrol/dist/L.Control.Locate.min.css';
 @import '../node_modules/zoom-vanilla.js/css/zoom.css';
 
+html {
+    height: 100%;
+    min-height: 100vh;
+    //overflow-y: auto;
+  }
+
+
 body {
     padding: 0px;
     margin: 0px;
     font-family: "Helvetica", "Arial";
-    overflow: hidden;
+    overflow-y: auto;
+    min-height: 100%;
+    height: 100%;
+    background-color: #fff;
 }
 
 // html {
@@ -49,8 +59,8 @@ img {
 #map {
     height: calc(50vh - env(safe-area-inset-top, 0));
     top: env(safe-area-inset-top, 0); /* Adjusts for mobile status bar */
-    width: 100vw;
-    position: absolute;
+    width: 100dvw;
+    position: fixed;
     z-index: 83;
     background-color: #fff;
     color: #000;
@@ -60,26 +70,99 @@ img {
     overflow: hidden;
     left: 0;
     /* Align the left side of the map with the left side of the viewport */
-    box-shadow: 0px 3px 3px rgba(0, 0, 0, 0.85);
+    box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.85);
+    transition: height 0.3s ease, width 0.3s ease;
+
+}
+
+#map.expanded {
+    //height: 100dvh; /* Fullscreen map */
+    min-height:100vh;
+    min-height:100dvh;
 }
 
 #sidebar {
     top: calc(50vh);
     width: 100vw;
     //bottom: env(safe-area-inset-bottom, 0);
-    height: calc(100vh - 55vh);
+    height: calc(100vh - 50vh);
+    //min-height: calc(100vh - 50vh);
+    //-webkit-overflow-scrolling: touch;
     z-index: 80;
     background-color: #fff;
     color: #000;
     border-left: 1px solid #ccc;
     padding: 0px;
     box-sizing: border-box;
-    overflow-y: auto;
-    overflow-x: hidden;
-    position: absolute;
+    //overflow-y: auto;
+    //overflow-x: hidden;
+    position: relative;
+    //position: absolute;
     /* Align the top of the sidebar with the top of the viewport */
     right: 0;
     /* Adjust the left position of the sidebar */
+    transition: height 0.3s ease, width 0.3s ease;
+}
+
+/* Minimized sidebar */
+#sidebar.minimized {
+    height: 0px; /* Or any height for the minimized state */
+    overflow: hidden; /* Hide the overflowed content */
+    //top: calc(100vh - 40px);
+    //right: 0;
+    //top: 100vh
+}
+
+#toggleSidebarDiv {
+    height: 0;
+    right: 0;
+    width: 100%;
+}
+
+#toggleSidebar {
+    position: fixed;
+    top: calc(50vh + 10px); /* Vertically center the button between map and sidebar */
+    right: 0;
+    transform: translateX(-20%);
+    z-index: 100;
+
+    padding: 0; /* Remove padding to avoid affecting the size */
+    background-color: #007BFF;
+    color: white;
+    border: none;
+    border-radius: 20px;
+    
+    width: 40px;  /* Increase width for a larger interaction field */
+    height: 40px; /* Increase height for a larger interaction field */
+    font-size: 18px;
+    //font-weight: bold;
+    cursor: pointer;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    box-sizing: content-box; /* Ensure the width/height includes only content, not padding */
+    
+    transition: top 0.3s ease, background-color 0.3s ease, transform 0.3s ease; /* Animate top position smoothly */
+}
+
+// #toggleSidebar:hover {
+//     background-color: #0056b3;
+//     transform: translateX(-50%) scale(1.05);
+// }
+
+// #toggleSidebar:focus {
+//     outline: none;
+//     box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+// }
+
+#toggleSidebar.minimized {
+    top: calc(100dvh - 55px); /* Slide the button near the bottom of the screen */
+    left: 50%; /* Center horizontally based on the viewport */
+    transform: translateX(-50%); /* Move left by 50% of its width to fully center */
+    width: 200px;
+    height: 30px;
 }
 
 .loading-message {
@@ -109,7 +192,7 @@ img {
         /* Adjust the width of the map */
         //min-width: calc(100vw - 40vw);
         // height: 100vh !important;
-        height: calc(100vh - env(safe-area-inset-top, 0));
+        height: 100vh;// calc(100vh - env(safe-area-inset-top, 0));
         top: env(safe-area-inset-top, 0); /* Adjusts for mobile status bar */
         //top: 0;
         background-color: #fff;
@@ -130,10 +213,12 @@ img {
     }
 
     #sidebar {
+        margin-top: 0;
         width: calc(100vw - 60vw);
         /* Adjust the width of the sidebar */
         max-width: 350px;
         height: 100vh;
+        position: absolute;
         background-color: #fff;
         /* Set the background color */
         color: #000;
@@ -143,12 +228,17 @@ img {
         /* Optional: Add padding inside the sidebar */
         box-sizing: border-box;
         /* Include padding and border in the element's total width and height */
-        overflow-y: auto;
+        //overflow-y: auto;
         /* Add a vertical scrollbar if the content overflows */
         top: 0;
+        z-index: 80;
         /* Align the top of the sidebar with the top of the viewport */
         right: 0;
         /* Adjust the left position of the sidebar */
+    }
+
+    #toggleSidebar {
+        display: none;
     }
 
 }
@@ -156,7 +246,7 @@ img {
 .container {
     position: relative;
     margin: 8px auto;
-    max-width: 90vw; /* 80% of the viewport's width */
+    max-width: 100vw; /* 80% of the viewport's width */
     padding-top: 10px;
     padding-left: 20px;
     padding-right: 10px;
@@ -250,7 +340,7 @@ img {
 
 .tweet-container .story-indent {
     border-top: none !important;
-    font-size: 14px;
+    font-size: 15px;
     display: flex;
     margin-top: 0 !important;
     align-items: start;
@@ -289,7 +379,7 @@ img {
 .message-content {
     font-weight: bold;
     line-height: 1.5em;
-    font-size: 14px;
+    font-size: 15px;
     padding: 0px; /* Optional: Add padding for better visual appearance */
 }
 
@@ -452,6 +542,7 @@ img {
 
 #tweets-navigation{
     padding: 14px;
+    padding-bottom: 30px;
 }
 
 .tweet-header {

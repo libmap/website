@@ -542,34 +542,62 @@ let base = {
         const SearchControl = L.Control.extend({
             onAdd: function(map) {
                 const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
-                
-                // Add custom CSS to center the button horizontally
-                container.style.position = 'fixed';
+        
+                // Set the position of the container
+                container.style.position = 'absolute'; // Change to absolute positioning
                 container.style.top = '0px'; // Adjust the top position if needed
-                container.style.left = '50%'; // Center horizontally based on the container
-                container.style.transform = 'translateX(-50%)'; // Adjust position to be centered
-                container.style.width = '175px'; // Set width of the container
                 container.style.zIndex = '1000'; // Ensure it's above other map elements
         
                 const button = L.DomUtil.create('button', '', container);
                 button.innerHTML = 'Search messages in view';
-                button.style.width = '171px'; // Set width of the button to fit inside container
+                button.style.width = '171px'; // Set width of the button
         
                 // Define the button click event handler
                 button.onclick = function() {
                     let ids = base.getVisibleTweetIds(base.map);
                     ids = ids.filter(id => base.visibleTweetIds.includes(id));
                     // Handle the search functionality here
-                    //alert('Searching messages in this area...');
                     sidebar.displayTweetsbyIds(ids);
                 };
+        
+                // Function to center the button within the #map
+                function centerButton() {
+                    const mapElement = document.getElementById('map');
+                    const mapWidth = mapElement.clientWidth; // Get the width of the map
+                    
+                    // Calculate the left position to center the button
+                    container.style.left = `${(mapWidth) / 2}px`; 
+                    container.style.transform = 'translateX(-50%)';
+                }
+        
+                // Initial centering
+                centerButton();
+        
+                // Function to handle removal and re-adding of the button
+                const refreshButton = () => {
+                    // // Remove the button from the map
+                    // map.removeControl(this);
+                    // // Add the control back to the map
+                    // map.addControl(this);
+                    // // Center the button again
+                    centerButton();
+                };
+
+                // Add event listeners for resizing and orientation changes
+                window.addEventListener('resize', refreshButton);
+                window.addEventListener('orientationchange', refreshButton);
+                                
         
                 return container;
             },
             onRemove: function(map) {
-                // Nothing to do here
+                // Remove the resize event listener when the control is removed
+                window.addEventListener('orientationchange', centerButton); 
+                window.removeEventListener('resize', centerButton);
             }
         });
+        
+        
         
         // Create an instance of the custom control
         const searchControl = new SearchControl({ position: 'topleft' }); // Set position to topleft

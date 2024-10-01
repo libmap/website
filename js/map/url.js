@@ -150,7 +150,7 @@ let url = {
             Url: url._stateToUrl(state)
         };
 
-        history.pushState(obj, obj.Title, obj.Url);
+        history.replaceState(obj, obj.Title, obj.Url);
     },
 
     getState: function() {

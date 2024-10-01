@@ -8,37 +8,69 @@
     <meta name="twitter:description" content="Community-driven map to pinpoint posts">
     <meta name="twitter:title" content="This location on libmap">
     <meta property="og:image" content="<%= htmlWebpackPlugin.options.environment.url.list.live %>/static/preview.jpg">
-    <meta name="viewport" content="width=device-width, initial-scale=0.6, maximum-scale=1, user-scalable=no" />
+    <meta name="viewport" content="width=device-width, initial-scale=0.8, maximum-scale=1, user-scalable=no" />
 </head>
 <script src="https://unpkg.com/protomaps-leaflet@latest/dist/protomaps-leaflet.min.js"></script>
 <script src="https://unpkg.com/pmtiles@3.0.3/dist/pmtiles.js"></script>
 
 <body>
-    <div id="map">
-        <div class="crosshair">+</div>
-    </div>
-    <div id="sidebar">
-        
-        <div class="container" id="container">
-            <div id="loading-message" class="loading-message">...</div>
-            
-            <div class="search-container">
-                <input type="text" id="term-search" placeholder="Filter: #hashtag @account" />
-                
-            </div>
-            <div id="searched-terms-container"></div>
-            <div id="tweets" class="tweet-container"></div>
-            <button class="top-btn" onclick="sidebar.scrollTo({top: 0, behavior: 'smooth'});">Top</button>
-
-            <!-- <button class="top-btn" onclick="window.scrollTo({top: 0, behavior: 'smooth'});">Top</button> -->
-            <div id="tweets-navigation">
-                <button id="back-button" class="back-btn">Back</button>
-                <button id="prev-button" class="navigation-button">Previous</button>
-                <button id="next-button" class="navigation-button">Next</button>
-            </div>
+    
+        <div id="map" class="map">
+            <div class="crosshair">+</div>
         </div>
-        
-    </div>
+        <div id="toggleSidebarDiv">
+         <!-- Minimize button -->
+         <button id="toggleSidebar" onclick="toggleSidebar()">&#x2715;</button>
+        </div>
+         
+        <div id="sidebar" class="sidebar">
+
+           
+            
+            <div class="container" id="container">
+                <div id="loading-message" class="loading-message">...</div>
+                
+                <div class="search-container">
+                    <input type="text" id="term-search" placeholder="Filter: #hashtag @account" />
+                    
+                </div>
+                <div id="searched-terms-container"></div>
+                <div id="tweets" class="tweet-container"></div>
+                <button class="top-btn" onclick="sidebar.scrollTo({top: 0, behavior: 'smooth'});">Top</button>
+
+                <!-- <button class="top-btn" onclick="window.scrollTo({top: 0, behavior: 'smooth'});">Top</button> -->
+                <div id="tweets-navigation">
+                    <button id="back-button" class="back-btn">Back</button>
+                    <button id="prev-button" class="navigation-button">Previous</button>
+                    <button id="next-button" class="navigation-button">Next</button>
+                </div>
+            </div>
+            
+        </div>
+
+        <script>
+            function toggleSidebar() {
+                const sidebar = document.getElementById('sidebar');
+                const mapElement = document.getElementById('map');
+                const toggleButton = document.getElementById('toggleSidebar');
+                
+                // Toggle 'minimized' class on sidebar
+                sidebar.classList.toggle('minimized');
+                
+                // Toggle 'expanded' class on map
+                mapElement.classList.toggle('expanded');
+                
+                // Move button down when the sidebar is minimized
+                if (sidebar.classList.contains('minimized')) {
+                    toggleButton.textContent = 'Show messages';
+                    toggleButton.classList.add('minimized'); // Move button down
+                } else {
+                    toggleButton.innerHTML = '&#x2715;'
+                    toggleButton.classList.remove('minimized'); // Move button back up
+                }
+            }
+        </script>
+    
 
     <!-- <%if (false) {%>
         <div id='new-tweet-sidebar'>
