@@ -17,6 +17,7 @@ import 'leaflet.locatecontrol';
 import sidebar from './sidebar.js';
 import api from './api/proxy.js';
 import search from './search.js';
+search.init();
 import 'protomaps-leaflet';
 import { PMTiles, leafletRasterLayer } from 'pmtiles';
 
@@ -70,24 +71,24 @@ let popupoptions = {
 }
 
 
-document.getElementById('toggleSidebar').addEventListener('click', function () {
-    setTimeout(() => {
-        // Update Leaflet map size
-        // if (base.map) {
-        //     base.map.invalidateSize();
-        // }
+// document.getElementById('toggleSidebar').addEventListener('click', function () {
+//     setTimeout(() => {
+//         // Update Leaflet map size
+//         // if (base.map) {
+//         //     base.map.invalidateSize();
+//         // }
 
-        // if (base.minimap && base.minimap._map) {
-        //     base.minimap._map.invalidateSize();  // Adjust minimap's size and position
-        // }
+//         // if (base.minimap && base.minimap._map) {
+//         //     base.minimap._map.invalidateSize();  // Adjust minimap's size and position
+//         // }
 
-        // Force a slight scroll to trigger the address bar to show (for mobile devices)
-        // window.scrollTo(0, 0);  // Scroll to the top of the page
+//         // Force a slight scroll to trigger the address bar to show (for mobile devices)
+//         // window.scrollTo(0, 0);  // Scroll to the top of the page
 
-        // Trigger a resize event if needed
-        window.dispatchEvent(new Event('resize'));
-    }, 500);
-});
+//         // Trigger a resize event if needed
+//         window.dispatchEvent(new Event('resize'));
+//     }, 500);
+// });
 
 L.Circle.include({
     contains: function (latLng) {
@@ -165,16 +166,18 @@ let base = {
         let tweet = state.tweet;
 
         $(tweets).on("loaded", function () {
-            if (!state.tweet) {
-                if (path in tweets.data.pathToTweetId)
-                    tweet = tweets.data.pathToTweetId[path];
+            // First check for path mapping to tweet ID
+            if (!tweet && path in tweets.data.pathToTweetId) {
+                tweet = tweets.data.pathToTweetId[path];
+            }
+            // Then check for direct tweet ID in URL params
+            else if (!tweet && state.tweet) {
+                tweet = state.tweet;
             }
 
-            if (tweet)
+            if (tweet) {
                 tweets.show(tweet);
-
-            //base.checkMarkersWithinBounds();
-            
+            }
         });
 
         
@@ -266,6 +269,9 @@ let base = {
             
 
             base.updateCircleSize();
+
+            // Populate sidebar layer controls AFTER initial layers are set
+            sidebar.populateLayerControls(); 
         })
 
     },
@@ -453,7 +459,7 @@ let base = {
                             interactive: false,
                             //fillColor: "#ff7800",
                             stroke: true,
-                            fillOpacity: 0.1,
+                            fillOpacity: 1,
                             dashArray: ''
                         });
 
@@ -549,17 +555,43 @@ let base = {
                 container.style.zIndex = '1000'; // Ensure it's above other map elements
         
                 const button = L.DomUtil.create('button', '', container);
-                button.innerHTML = 'Search messages in view';
-                button.style.width = '171px'; // Set width of the button
+            button.innerHTML = 'Search messages in view';
+            //button.style.width = '171px'; // Set width of the button
+            button.style.display = 'inline-block';
+            button.style.padding = '5px';
+            button.style.width = 'auto';
+            button.style.height = 'auto';
+            button.style.whiteSpace = 'nowrap';
         
-                // Define the button click event handler
-                button.onclick = function() {
-                    let ids = base.getVisibleTweetIds(base.map);
-                    ids = ids.filter(id => base.visibleTweetIds.includes(id));
-                    // Handle the search functionality here
-                    sidebar.displayTweetsbyIds(ids);
+            // Define the button click event handler
+            button.onclick = function() {
+                if (!search.ensureSearchInputs()) {
+                    console.warn('Search inputs not available in current view');
+                    return;
+                }
+                    const bounds = base.map.getBounds();
+                    const allTweets = tweets.data.tweets; // Get all loaded tweets
+                    let idsInView = [];
+
+                    if (allTweets) {
+                        Object.keys(allTweets).forEach(id => {
+                            const tweetInfo = allTweets[id];
+                            // Check if tweet has coordinates and is within bounds
+                            if (tweetInfo.state && tweetInfo.state.center && bounds.contains(tweetInfo.state.center)) {
+                                idsInView.push(id);
+                            }
+                        });
+                    }
+
+                    // Filter the found IDs against any existing sidebar filter (like #hashtag or @account)
+                    // This preserves existing filters when searching in view.
+                    // If no filter is active, base.visibleTweetIds should contain all initial IDs.
+                    idsInView = idsInView.filter(id => base.visibleTweetIds.includes(id));
+
+                    // Update the sidebar with the tweets found within the view
+                    sidebar.displayTweetsbyIds(idsInView);
                 };
-        
+
                 // Function to center the button within the #map
                 function centerButton() {
                     const mapElement = document.getElementById('map');
@@ -641,7 +673,7 @@ let base = {
         }).addTo(base.map);
 
         L.Control.geocoder({
-            position: 'topright',
+            position: 'topleft',
             defaultMarkGeocode: false
         }).on('markgeocode', function (e) {
             var bbox = e.geocode.bbox;
@@ -655,7 +687,7 @@ let base = {
         }).addTo(base.map);
 
         L.control.locate({
-            position: 'topright',
+            position: 'topleft',
             drawCircle: false,
             drawMarker: false
         }).addTo(base.map);

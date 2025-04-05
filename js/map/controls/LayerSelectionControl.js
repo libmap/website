@@ -30,6 +30,10 @@ L.Control.LayerSelectionControl = L.Control.Layers.extend({
         }
         if (e.type == 'remove') {
             this._choices.removeActiveItemsByValue(e.target.id)
+            // Explicitly trigger URL update when removing layers
+            if (this._map && this._map._url) {
+                this._map._url.pushState();
+            }
         }
     },
 

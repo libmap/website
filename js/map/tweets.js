@@ -191,7 +191,6 @@ let manager = {
                 markers.push(marker);
             }
         });
-
         if (markers.length > 0) {
             let group = new L.featureGroup(markers); // Create a feature group with the markers
             base.map.fitBounds(group.getBounds()); // Fit the map bounds to the feature group
@@ -492,45 +491,40 @@ let manager = {
                 activateButton.innerHTML = "View";
 
                 activateButton.onclick = function () {
+                    base.map.closePopup();
+                    let tweetInfo = manager.data.tweets[id];
+                    let state = { ...tweetInfo.state };
                     
-                    manager.show(id);
-
-                    const sidebar = document.getElementById('sidebar');
-                    const mapElement = document.getElementById('map');
-                    const toggleButton = document.getElementById('toggleSidebar');
+                    // Store current state if not already stored
+                    if(base.stateBefore === null) {
+                        base.stateBefore = base.getState();
+                    }
                     
-                    // Toggle 'minimized' class on sidebar
-                    //sidebar.classList.toggle('minimized');
-                    
-
-                    
-                    // Move button down when the sidebar is minimized
-                    if (sidebar.classList.contains('minimized')) {
-                        sidebar.classList.toggle('minimized');
-                        mapElement.classList.toggle('expanded');
-                        toggleButton.innerHTML = '&#x2715;'
-                        toggleButton.classList.remove('minimized'); // Move button back up
-                    } 
-
-                    setTimeout(() => {
-                        // Update Leaflet map size
+                    // Match sidebar's exact flyTo parameters
+                    base.map.flyTo(state.center, state.zoom, {
+                        duration: 0.6,
+                        easeLinearity: 0.25
+                    }).once('moveend', function() {
+                        // Ensure map is properly sized before showing content
                         if (base.map) {
                             base.map.invalidateSize();
                         }
-            
-                
-                        // Trigger a resize event if needed
-                        window.dispatchEvent(new Event('resize'));
-                    }, 500);
-
-
+                        
+                        // Show the tweet content after animation completes
+                        manager.show(id);
+                        
+                        // Trigger resize event for any responsive elements
+                        // window.dispatchEvent(new Event('resize'));
+                    });
                 }
 
                 div.appendChild(activateButton);
 
                 //return L.marker(latlng).bindPopup(div);
                 marker.bindPopup(div, {
-                    autoPan: false
+                    autoPan: false,
+                    autoPanPaddingTopLeft: [0, 0],
+                    autoPanPaddingBottomRight: [0, 0]
                 });
 
                 marker.on('dblclick', function () {

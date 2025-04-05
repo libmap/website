@@ -2,39 +2,26 @@ import sidebar from './sidebar.js';
 import url from './url.js';
 import tweets from './tweets.js';
 
-function displaySearchedTerm(term) {
+function displaySearchedTerm(term, type) {
     const termsContainer = document.getElementById('searched-terms-container');
     const existingTerms = Array.from(termsContainer.children).map(termBox => termBox.textContent.trim());
 
     // Check if the term already exists
     if (!existingTerms.includes(term)) {
-        // Check if the term is a hashtag or an account
-        const isHashtag = term.startsWith('#');
-        const isAccount = term.startsWith('@');
-
-        // If it's a hashtag, remove existing hashtags
-        if (isHashtag) {
-            removeExistingTerms(termsContainer, '#');
-        }
-
-        // If it's an account, remove existing accounts
-        if (isAccount) {
-            removeExistingTerms(termsContainer, '@');
-        }
+        // Remove existing terms of same type
+        removeExistingTerms(termsContainer, type === 'user' ? '@' : '#');
 
         // Create a new term box
         const termBox = document.createElement('div');
         termBox.className = 'searched-term-box';
+        termBox.dataset.type = type;
         termBox.innerHTML = `
-            <span>${term}</span>
-            <button class="remove-term-btn">&times;</button>
+            <span>${type === 'user' ? '@' : '#'}${term}</span>
+            <button class="remove-term-btn" aria-label="Remove filter">&times;</button>
         `;
 
         // Append the new term box
         termsContainer.appendChild(termBox);
-
-        // If needed, you can now handle the search logic for the new term
-        // handleSearch();
     }
 }
 
@@ -99,9 +86,20 @@ function removeSearchedTerm(term, event) {
 
             //base.setState()
 
-            // If event is provided, update the display based on the removed term
-            if (event) {
-                handleSearch(event);
+            // After removing term, update display
+            const remainingTerms = Array.from(termsContainer.children);
+            if (remainingTerms.length > 0) {
+                // If terms remain, search for them
+                const lastTerm = remainingTerms[remainingTerms.length-1].querySelector('span').textContent;
+                if (lastTerm.startsWith('@')) {
+                    sidebar.accountToIdsDisplay(lastTerm.slice(1));
+                } else if (lastTerm.startsWith('#')) {
+                    sidebar.hashtagToIdsDisplay(lastTerm.slice(1));
+                }
+            } else {
+                // If no terms left, show all results
+                base.visibleTweetIds = base.initVisibleTweetIds;
+                sidebar.displayTweetsbyIds();
             }
 
             break; // Break the loop since we found and removed the element
@@ -109,33 +107,31 @@ function removeSearchedTerm(term, event) {
     }
 }
 
-function handleSearch(event) {
-    // Check if the Enter key is pressed (key code 13)
+function handleUserSearch(event) {
     if (event.key === 'Enter') {
-        var searchTerm = document.getElementById('term-search').value;
-        // Implement your search logic here, possibly using filterTweetsByAccount or similar
-        document.getElementById('tweets').innerHTML = ''; // Clear previous tweets
-        if (searchTerm.startsWith('@')){
-            sidebar.accountToIdsDisplay(searchTerm.slice(1))
+        const searchTerm = document.getElementById('user-search').value.trim();
+        if (searchTerm.length > 0) {
+            document.getElementById('tweets').innerHTML = '';
+            sidebar.accountToIdsDisplay(searchTerm);
+            displaySearchedTerm(searchTerm, 'user');
+            document.getElementById('user-search').value = '';
         }
-
-        if (searchTerm.startsWith('#')){
-            sidebar.hashtagToIdsDisplay(searchTerm.slice(1))
-        }
-
-        // Display the searched term as a box
-        displaySearchedTerm(searchTerm);
-
-        // Clear the search input after adding the term
-        clearSearchInput();
     }
 }
 
-function clearSearchInput() {
-    document.getElementById('term-search').value = '';
+function handleHashtagSearch(event) {
+    if (event.key === 'Enter') {
+        const searchTerm = document.getElementById('hashtag-search').value.trim();
+        if (searchTerm.length > 0) {
+            document.getElementById('tweets').innerHTML = '';
+            sidebar.hashtagToIdsDisplay(searchTerm);
+            displaySearchedTerm(searchTerm, 'hashtag');
+            document.getElementById('hashtag-search').value = '';
+        }
+    }
 }
 
-// Event listener for the search input
+// Event listeners
 document.addEventListener('DOMContentLoaded', function () {
     const termsContainer = document.getElementById('searched-terms-container');
 
@@ -148,10 +144,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
     search.displayInitialSearchedTerms();
 
-    var searchInput = document.getElementById('term-search');
-    if (searchInput) {
-        searchInput.addEventListener('input', handleSearch);
-        searchInput.addEventListener('keydown', handleSearch);
+    const userSearch = document.getElementById('user-search');
+    if (userSearch) {
+        userSearch.addEventListener('keydown', handleUserSearch);
+    }
+
+    const hashtagSearch = document.getElementById('hashtag-search');
+    if (hashtagSearch) {
+        hashtagSearch.addEventListener('keydown', handleHashtagSearch);
     }
 
     var clearButton = document.querySelector('.clear-btn');
@@ -172,25 +172,54 @@ function clearSearch() {
 let search = {
     displayInitialSearchedTerms: function () {
         const termsContainer = document.getElementById('searched-terms-container');
-        //const existingTerms = Array.from(termsContainer.children).map(termBox => termBox.textContent.trim());
+        if (!termsContainer) return; // Skip if container doesn't exist
+        
         const state = url.getState();
     
         // Check if state.account exists and display the account term
         if (state.account) {
-            displaySearchedTerm(`@${state.account}`);
+            displaySearchedTerm(state.account, 'user');
         } else {
             removeExistingTerms(termsContainer, '@');
         }
     
         // Check if state.hashtag exists and display the hashtag term
         if (state.hashtag) {
-            displaySearchedTerm(`#${state.hashtag}`);
+            displaySearchedTerm(state.hashtag, 'hashtag');
         } else {
             removeExistingTerms(termsContainer, '#');
         }
+    },
+    
+    init: function() {
+        // Wait for DOM to be ready for both desktop and mobile
+        const initSearch = () => {
+            const userSearch = document.getElementById('user-search');
+            const hashtagSearch = document.getElementById('hashtag-search');
+            
+            if (userSearch) {
+                userSearch.addEventListener('keydown', handleUserSearch);
+            }
+            if (hashtagSearch) {
+                hashtagSearch.addEventListener('keydown', handleHashtagSearch);
+            }
+            
+            this.displayInitialSearchedTerms();
+        };
+
+        if (document.readyState === 'complete' || document.readyState === 'interactive') {
+            initSearch();
+        } else {
+            document.addEventListener('DOMContentLoaded', initSearch);
+        }
+    },
+    
+    ensureSearchInputs: function() {
+        return document.getElementById('user-search') && 
+               document.getElementById('hashtag-search') &&
+               document.getElementById('searched-terms-container');
     }
 
 }
 
 export default search
-

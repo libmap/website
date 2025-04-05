@@ -124,8 +124,8 @@ let url = {
         if (rs.z)
             s.zoom = parseInt(rs.z);
 
-        // if (rs.t)
-        //     s.tweet = rs.t;
+        if (rs.t)
+            s.tweet = rs.t;
 
         if (rs['@']) {
             s.account = rs['@'];

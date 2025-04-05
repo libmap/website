@@ -15,37 +15,56 @@
 
 <body>
     
-        <div id="map" class="map">
-            <div class="crosshair">+</div>
-        </div>
-        <div id="toggleSidebarDiv">
-         <!-- Minimize button -->
-         <button id="toggleSidebar" onclick="toggleSidebar()">&#x2715;</button>
-        </div>
+        
+
          
-        <div id="sidebar" class="sidebar">
-
-           
-            
-            <div class="container" id="container">
-                <div id="loading-message" class="loading-message">...</div>
-                
-                <div class="search-container">
-                    <input type="text" id="term-search" placeholder="Filter: #hashtag @account" />
-                    
-                </div>
-                <div id="searched-terms-container"></div>
-                <div id="tweets" class="tweet-container"></div>
-                <button class="top-btn" onclick="sidebar.scrollTo({top: 0, behavior: 'smooth'});">Top</button>
-
-                <!-- <button class="top-btn" onclick="window.scrollTo({top: 0, behavior: 'smooth'});">Top</button> -->
-                <div id="tweets-navigation">
-                    <button id="back-button" class="back-btn">Back</button>
-                    <button id="prev-button" class="navigation-button">Previous</button>
-                    <button id="next-button" class="navigation-button">Next</button>
+        <div class="bottom-sheet">
+            <div class="sheet-overlay">
+                <div id="map" class="map">
+                    <div class="crosshair">+</div>
                 </div>
             </div>
-            
+            <div class="content" id="content">
+                <div class="header">
+                    <div class="drag-icon"><span></span></div>
+                </div>
+                <div class="body" id="body">
+                    <!-- Tab Navigation -->
+                    <div class="tabs">
+                        <button class="tab-button active" data-tab="messages">Messages</button>
+                        <button class="tab-button" data-tab="layers">Layers</button>
+                    </div>
+
+                    <!-- Tab Content -->
+                    <div class="tab-content active" id="messages-tab">
+                        <div class="container" id="container">
+                            <div id="loading-message" class="loading-message">...</div>
+                            <div class="search-container">
+                                <input type="text" id="user-search" placeholder="Search users" />
+                                <input type="text" id="hashtag-search" placeholder="Search #" />
+                            </div>
+                            <div id="searched-terms-container"></div>
+                            <div id="tweets" class="tweet-container"></div>
+                            <button class="top-btn" onclick="document.getElementById('messages-tab').scrollTo({top: 0, behavior: 'smooth'});">Top</button>
+                            <div id="tweets-navigation">
+                                <button id="back-button" class="back-btn">Back</button>
+                                <button id="prev-button" class="navigation-button">Previous</button>
+                                <button id="next-button" class="navigation-button">Next</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="tab-content" id="layers-tab">
+                        <!-- Layer control content will be added here dynamically -->
+                        <div class="container" id="layers-container">
+                            <h4>Base Layers</h4>
+                            <div id="base-layers-list"></div>
+                            <h4>Overlays</h4>
+                            <div id="overlay-layers-list"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <script>
@@ -69,6 +88,107 @@
                     toggleButton.classList.remove('minimized'); // Move button back up
                 }
             }
+
+
+            
+
+            // Select DOM elements
+            document.addEventListener("DOMContentLoaded", function() {
+                showBottomSheet();
+            });
+            const map = document.getElementById('map');
+            const showModalBtn = document.querySelector(".show-modal");
+            const bottomSheet = document.querySelector(".bottom-sheet");
+            const sheetOverlay = bottomSheet.querySelector(".sheet-overlay");
+            const sheetContent = bottomSheet.querySelector(".content");
+            const dragIcon = bottomSheet.querySelector(".drag-icon");
+
+            // Global variables for tracking drag events
+            let isDragging = false, startY, startHeight;
+
+            // Function to update the map's height
+            function updateMapHeight() {
+                const bottomSheetHeight = sheetContent.style.height; // Get the height of the bottom sheet
+                console.log(sheetContent.style.height)
+                map.style.bottom = `${bottomSheetHeight}`; // Adjust the map's bottom position
+                base.map.invalidateSize();
+                //map.style.height = `calc(100vh-${bottomSheetHeight})`; // Adjust the map's bottom position
+            }
+
+
+            // Show the bottom sheet, hide body vertical scrollbar, and call updateSheetHeight
+            const showBottomSheet = () => {
+                bottomSheet.classList.add("show");
+                document.body.style.overflowY = "hidden";
+                updateSheetHeight(50); // Default height when opened
+                updateMapHeight();
+            }
+
+            const updateSheetHeight = (height) => {
+                sheetContent.style.height = `${height}vh`; // Updates the height of the sheet content
+                // Toggles the fullscreen class to bottomSheet if the height is equal to 100
+                bottomSheet.classList.toggle("fullscreen", height === 100);
+            }
+
+            // Hide the bottom sheet by setting it to 10% height
+            const hideBottomSheet = () => {
+                updateSheetHeight(10); // Set height to 10% instead of hiding
+                document.body.style.overflowY = "auto";
+                updateMapHeight();
+            }
+
+            // Sets initial drag position, sheetContent height, and add dragging class to the bottom sheet
+            const dragStart = (e) => {
+                isDragging = true;
+                startY = e.pageY || e.touches?.[0].pageY;
+                startHeight = parseInt(sheetContent.style.height);
+                bottomSheet.classList.add("dragging");
+            }
+
+            // Calculates the new height for the sheet content and call the updateSheetHeight function
+            const dragging = (e) => {
+                if (!isDragging) return;
+                const delta = startY - (e.pageY || e.touches?.[0].pageY);
+                const newHeight = startHeight + delta / window.innerHeight * 100;
+                // Ensure the sheet doesn't go below 10% height
+                updateSheetHeight(Math.max(newHeight, 10));
+            }
+
+            // Determines whether to set to fullscreen, default height, or minimum height
+            const dragStop = () => {
+                isDragging = false;
+                bottomSheet.classList.remove("dragging");
+                const sheetHeight = parseInt(sheetContent.style.height);
+                if (sheetHeight < 25) {
+                    updateSheetHeight(10); // Set to minimum height (10%)
+                    updateMapHeight();
+                } else if (sheetHeight > 75) {
+                    updateSheetHeight(100); // Set to fullscreen
+                    updateMapHeight();
+                } else {
+                    updateSheetHeight(50); // Set to default height
+                    updateMapHeight();
+                }
+                //updateMapHeight();
+            }
+
+            // Event listeners
+            dragIcon.addEventListener("mousedown", dragStart);
+            document.addEventListener("mousemove", dragging);
+            document.addEventListener("mouseup", dragStop);
+
+            dragIcon.addEventListener("touchstart", dragStart);
+            document.addEventListener("touchmove", dragging);
+            document.addEventListener("touchend", dragStop);
+
+            //sheetOverlay.addEventListener("click", hideBottomSheet);
+            showModalBtn.addEventListener("click", showBottomSheet);
+
+            // Initialize the bottom sheet to 10% height when the page loads
+            updateSheetHeight(10);
+            
+            //const resizeObserver = new ResizeObserver(updateMapHeight);
+            //resizeObserver.observe(bottomSheet);
         </script>
     
 

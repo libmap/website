@@ -3,11 +3,11 @@ import tweets from './tweets.js';
 import 'zoom-vanilla.js'
 import url from './url.js';
 import search from './search.js';
-import { map, icon, Marker } from 'leaflet';
+import L, { map, icon, Marker } from 'leaflet'; // Import L
 import 'leaflet-control-geocoder';
 import './geoip.js';
 import './marker/control.js';
-import { layerSets, layers } from './layers/sets.js';
+import { layerSets } from './layers/sets.js'; // Import layerSets
 import base from './base.js';
 
 let tweetData = null;
@@ -22,9 +22,10 @@ const tweetsPerPage = 20;
 document.getElementById('next-button').addEventListener('click', function () {
     sidebar.currentPage++;
     sidebar.displayTweetsbyIds(null, sidebar.currentPage);
-    let sidebarElement = document.getElementById('sidebar');
+    let sidebarElement = document.getElementById('messages-tab'); // Corrected ID
     if (sidebarElement) {
-        document.documentElement.scrollTop = 0;
+        sidebarElement.scrollTop = 0; // Corrected target and property access
+        //document.documentElement.scrollTop = 0;
     }
 });
 
@@ -33,9 +34,10 @@ document.getElementById('prev-button').addEventListener('click', function () {
         sidebar.currentPage--;
         sidebar.displayTweetsbyIds(null, sidebar.currentPage);
     }
-    let sidebarElement = document.getElementById('sidebar');
+    let sidebarElement = document.getElementById('messages-tab'); // Corrected ID
     if (sidebarElement) {
-        document.documentElement.scrollTop = 0;
+        sidebarElement.scrollTop = 0; // Corrected target and property access
+        //document.documentElement.scrollTop = 0;
     }
 });
 
@@ -48,7 +50,22 @@ document.getElementById('back-button').addEventListener('click', function () {
     base.tweetBoxActive = false;
     sidebar.hideID('back-button')
     let lastId = history[history.length - 1]; // Get last id
-    sidebar.scrollToHeadTweet(lastId)
+    sidebar.scrollToHeadTweet(lastId);
+});
+
+// Tab switching logic
+document.querySelectorAll('.tab-button').forEach(button => {
+    button.addEventListener('click', () => {
+        const tabName = button.getAttribute('data-tab');
+        
+        // Deactivate all tabs and content
+        document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+        // Activate clicked tab and corresponding content
+        button.classList.add('active');
+        document.getElementById(`${tabName}-tab`).classList.add('active');
+    });
 });
 
 
@@ -58,8 +75,6 @@ let sidebar = {
     currentPage: 1,
 
     init: function () {
-        // let class_bb = document.querySelector('.back-btn');
-        // class_bb.classList.add('hidden');
 
         tweetDataPromise = new Promise((resolve) => {
             // Set up an event listener for the 'loaded' event
@@ -92,10 +107,176 @@ let sidebar = {
             console.error('Error with data loading:', error);
             // Handle the error appropriately
         });
+
+        // REMOVED: Populate layer controls - moved to base.js after initial layers are set
+        // this.populateLayerControls(); 
     },
 
+    // --- New function to populate layer controls ---
+    populateLayerControls: function() {
+        const baseLayersList = document.getElementById('base-layers-list');
+        const overlayLayersList = document.getElementById('overlay-layers-list');
+
+        baseLayersList.innerHTML = ''; // Clear existing
+        overlayLayersList.innerHTML = ''; // Clear existing
+
+        // --- Base Layers (Radio Buttons) ---
+        const baseLayerSet = layerSets.baseTiles;
+        console.log(baseLayerSet)
+        Object.entries(baseLayerSet.layers).forEach(([key, layer]) => {
+            if (key === 'empty') return; // Skip empty layer if present
+            if (key === 'satellite_minimap') return;
+
+            const layerId = `layer-base-${key}`;
+            const div = document.createElement('div');
+            div.className = 'layer-control-item';
+            div.innerHTML = `
+                <input type="radio" id="${layerId}" name="base-layer-radio" value="${key}" ${base.map.hasLayer(layer) ? 'checked' : ''}>
+                <label for="${layerId}">${layer.options.name || key}</label>
+            `;
+            baseLayersList.appendChild(div);
+
+            // Add event listener
+            div.querySelector('input').addEventListener('change', (e) => {
+                if (e.target.checked) {
+                    // Remove all other base layers
+                    Object.values(baseLayerSet.layers).forEach(l => {
+                        if (base.map.hasLayer(l)) {
+                            base.map.removeLayer(l);
+                        }
+                    });
+                    // Add the selected layer
+                    base.map.addLayer(layer);
+                    url.pushState();
+                    layer.bringToBack(); // Ensure base layer is behind overlays
+                }
+            });
+        });
+
+        // --- Overlay Layers (Tree Structure) ---
+        const createLayerCheckbox = (key, layer, layerSetName, isSubItem = false) => {
+            const layerId = `layer-overlay-${layerSetName}-${key}`;
+            const div = document.createElement('div');
+            div.className = `layer-control-item ${isSubItem ? 'sub-item' : ''}`;
+            div.innerHTML = `
+                <input type="checkbox" id="${layerId}" name="overlay-layer-checkbox" value="${key}" ${base.map.hasLayer(layer) ? 'checked' : ''}>
+                <label for="${layerId}">${layer.options.name || key}</label>
+            `;
+            div.querySelector('input').addEventListener('change', (e) => {
+                if (e.target.checked) {
+                    base.map.addLayer(layer);
+                    url.pushState()
+                } else {
+                    base.map.removeLayer(layer);
+                    url.pushState()
+                }
+            });
+            return div;
+        };
+        
+        const createLayerRadio = (key, layer, groupName, isSubItem = false, isChecked) => {
+            const layerId = `layer-overlay-${groupName}-${key}`;
+            const div = document.createElement('div');
+            div.className = `layer-control-item ${isSubItem ? 'sub-item' : ''}`;
+            div.innerHTML = `
+                <input type="radio" id="${layerId}" name="${groupName}-layer-radio" value="${key}" ${isChecked ? 'checked' : ''}>
+                <label for="${layerId}">${layer.options.name || key}</label>
+            `;
+            div.querySelector('input').addEventListener('change', (e) => {
+                if (e.target.checked) {
+                    // Find all layers in this radio group
+                    const groupLayers = layerSets[groupName === 'no2' ? 'overlays' : 'baseTiles'].layers; // Adjust based on group name if needed
+                    Object.entries(groupLayers).forEach(([k, l]) => {
+                        if (k.startsWith(groupName) || (groupName === 'no2' && k === 'empty')) { // Match keys belonging to the group
+                             if (k !== key && base.map.hasLayer(l)) {
+                                 base.map.removeLayer(l);
+                                 url.pushState();
+                             }
+                        }
+                    });
+                     // Add the selected layer if not already present and not the 'empty' layer
+                    if (key !== 'empty' && !base.map.hasLayer(layer)) {
+                        url.pushState()
+                        base.map.addLayer(layer);
+                        url.pushState()
+                    }
+                }
+            });
+            return div;
+        };
+
+        const createCollapsibleGroup = (title, contentGenerator) => {
+            const details = document.createElement('details');
+            details.className = 'layer-group-collapsible';
+            const summary = document.createElement('summary');
+            summary.textContent = title;
+            details.appendChild(summary);
+            contentGenerator(details); // Populate content
+            return details;
+        };
+
+        // Messages Layer (Direct Checkbox)
+        const tweetsLayer = layerSets.tweets.layers.tweets;
+        if (tweetsLayer && tweetsLayer.options?.name) {
+             overlayLayersList.appendChild(createLayerCheckbox('tweets', tweetsLayer, 'tweets'));
+        }
+
+        // Points of Interest (Collapsible)
+        overlayLayersList.appendChild(createCollapsibleGroup('Points of Interest', (parent) => {
+            const poiLayers = layerSets.points.layers;
+            // Climate TRACE Sub-group
+            parent.appendChild(createCollapsibleGroup('Climate TRACE', (subParent) => {
+                 subParent.appendChild(createLayerCheckbox('energy', poiLayers.energy, 'points', true));
+                 subParent.appendChild(createLayerCheckbox('manufacturing', poiLayers.manufacturing, 'points', true));
+                 subParent.appendChild(createLayerCheckbox('fossil-fuel-operations', poiLayers['fossil-fuel-operations'], 'points', true));
+            }));
+             // Other Datasets Sub-group
+            parent.appendChild(createCollapsibleGroup('Other Datasets', (subParent) => {
+                 //subParent.appendChild(createLayerCheckbox('e-prtr', poiLayers['e-prtr'], 'points', true));
+                 subParent.appendChild(createLayerCheckbox('eu-ets', poiLayers['eu-ets'], 'points', true));
+                 subParent.appendChild(createLayerCheckbox('power-plants', poiLayers['power-plants'], 'points', true));
+                 subParent.appendChild(createLayerCheckbox('big-cities', poiLayers['big-cities'], 'points', true));
+            }));
+        }));
+        
+        // NO₂ Layers (Collapsible Radio Group)
+        overlayLayersList.appendChild(createCollapsibleGroup('NO₂ Pollution', (parent) => {
+            const no2Layers = layerSets.overlays.layers;
+            const no2Keys = Object.keys(no2Layers).filter(k => k.startsWith('no2_') || k === 'empty');
+            let isAnyNo2Active = no2Keys.some(k => k !== 'empty' && base.map.hasLayer(no2Layers[k]));
+
+            // Add 'Disable' option first
+             const disableKey = 'empty';
+             const disableLayer = no2Layers[disableKey];
+             if (disableLayer) {
+                 parent.appendChild(createLayerRadio(disableKey, disableLayer, 'no2', true, !isAnyNo2Active));
+             }
+
+            // Add actual NO2 layers
+            no2Keys.filter(k => k !== 'empty').forEach(key => {
+                 const layer = no2Layers[key];
+                 parent.appendChild(createLayerRadio(key, layer, 'no2', true, base.map.hasLayer(layer)));
+            });
+        }));
+
+        // Countries (Collapsible Checkboxes)
+        overlayLayersList.appendChild(createCollapsibleGroup('Countries', (parent) => {
+             const countryLayers = layerSets.countries.layers;
+             Object.entries(countryLayers).forEach(([key, layer]) => {
+                 // Key format is likely "countries!XX"
+                 const countryCode = key.split('!')[1];
+                 if (countryCode && layer.options?.name) {
+                     parent.appendChild(createLayerCheckbox(key, layer, 'countries', true));
+                 }
+             });
+        }));
+
+    },
+    // --- End of refactored function ---
+
+
     getSidebarTopPosition: function() {
-        const sidebarElement = document.getElementById('sidebar');
+        const sidebarElement = document.getElementById('body');
     
         if (sidebarElement) {
             // Get the position of the sidebar relative to the viewport
@@ -113,37 +294,29 @@ let sidebar = {
 
     scrollToHeadTweet: async function (id, speed = 'instant', position = 'start') {
         try {
-            const tweetData = await tweetDataPromise; // Assuming you need data from the promise
-            const lastElement = document.getElementById(sidebar.getHeadTweetById(id, tweetData));
-    
-            if (lastElement) {
-                // Get the position of the lastElement relative to the page
-                const elementRect = lastElement.getBoundingClientRect();
-                const offsetTop = elementRect.top + window.scrollY; // Element's position in the page
-                
+            const tweetData = await tweetDataPromise;
+            const headTweetId = sidebar.getHeadTweetById(id, tweetData); // Get the actual head tweet ID first
+            const headTweetElement = document.getElementById(headTweetId); // Target the head tweet element
+            const sidebarElement = document.getElementById('messages-tab'); // Corrected ID
 
-                // Get the top position of the sidebar relative to the document
-                const sidebarElement = document.getElementById('sidebar');
-                const sidebarRect = sidebarElement.getBoundingClientRect();
-                const sidebarTop = sidebarRect.top + window.scrollY;
+            if (headTweetElement && sidebarElement) {
+                // Calculate the position of the head tweet element relative to the sidebar container
+                const elementTopRelativeToSidebar = headTweetElement.offsetTop - sidebarElement.offsetTop;
 
                 // Determine the scroll behavior
                 const scrollBehavior = speed === 'smooth' ? 'smooth' : 'auto';
-                
-                // Scroll to the calculated position
-                window.scrollTo({
-                    top: offsetTop - sidebarTop,
+
+                // Scroll the sidebar container
+                sidebarElement.scrollTo({
+                    top: elementTopRelativeToSidebar,
                     behavior: scrollBehavior
                 });
-            } else {
-                const sidebarElement = document.getElementById('sidebar'); 
-                if (sidebarElement) {
-                    // Scroll to the top if the element doesn't exist
-                    sidebarElement.scrollTop = 0;
-                }
+            } else if (sidebarElement) {
+                // Scroll to the top if the element doesn't exist
+                sidebarElement.scrollTop = 0;
             }
         } catch (error) {
-            console.error('Error waiting for tweet data:', error);
+            console.error('Error scrolling to head tweet:', error);
         }
     },
     
@@ -193,10 +366,9 @@ let sidebar = {
         sidebar.scrollStartOrCenter(id);
 
     },
-
     scrollStartOrCenter: function(id, speed = 'instant') {
         const d = document.getElementById(id);
-        const sidebar = document.getElementById('sidebar');
+        const sidebar = document.getElementById('messages-tab');
         //const app = document.getElementById('app');
         
         if (d && sidebar) {
@@ -221,11 +393,25 @@ let sidebar = {
                 scrollTop = dRect.top - sidebarRect.top + sidebar.scrollTop - (sidebarHeight / 2 - dHeight / 2);
             }
             console.log(scrollTop)
-            console.log(document.body.clientHeight)
+            //console.log(document.body.clientHeight)
             // Apply scrolling with behavior
-            document.documentElement.scrollTo({
+            d.scrollIntoView({
                 top: scrollTop,
                 behavior: speed // 'instant' or 'smooth'
+            });
+        }
+    },
+
+    scrollStartOrCenter2: function(id, speed = 'instant') {
+        const d = document.getElementById(id);
+        const sidebarElement = document.getElementById('messages-tab'); // Ensure we have the scroll container
+
+        if (d && sidebarElement) {
+            // Use the built-in scrollIntoView method
+            d.scrollIntoView({
+                behavior: speed, // 'smooth' or 'instant'
+                block: 'nearest' // Scrolls the minimum amount to bring the element into view
+                // block: 'center' // Alternative: Tries to center the element vertically
             });
         }
     },
@@ -472,11 +658,11 @@ let sidebar = {
 
             const headTweetsToDisplay = filteredTweets.slice(startIndex, startIndex + tweetsPerPage);
 
-            let sidebarElement = document.getElementById('sidebar');
+            let sidebarElement = document.getElementById('messages-tab'); // Corrected ID
             if (sidebarElement) {
-                sidebarElement.scrollTop = 0;
+                sidebarElement.scrollTop = 0; // Scroll the correct element
             }
-            
+
 
             if (page === 1) {
                 sidebar.hideID('prev-button')
@@ -495,7 +681,8 @@ let sidebar = {
 
             // Clear previous tweets only if it's the first page
             tweetsContainer.innerHTML = '';
-            tweets.invisibleMarker();
+            // Clear all markers from the map layer
+            base.layerSets.tweets.layers.tweets.clearLayers();
             let tweetsToDisplay = []
 
             let markers = []; // Use let to declare the markers array
@@ -506,7 +693,11 @@ let sidebar = {
                     markers.push(marker);
                 }
                 tweetsToDisplay.push(id)
-                tweets.visibleMarker(id);
+                // Add the marker back to the map layer if it exists
+                if (marker) {
+                    base.layerSets.tweets.layers.tweets.addLayer(marker);
+                    url.pushState()
+                }
                 tweetsContainer.appendChild(sidebar.createTweetElement(id, tweet, true));
                 const storyTweets = sidebar.getTweetsOfStory(tweetData, id);
                 storyTweets.forEach(([storyId, storyTweet]) => {
@@ -515,7 +706,11 @@ let sidebar = {
                         markers.push(marker);
                     }
                     tweetsToDisplay.push(storyId)
-                    tweets.visibleMarker(storyId);
+                    // Add the story tweet marker back to the map layer if it exists
+                    if (marker) {
+                        base.layerSets.tweets.layers.tweets.addLayer(marker);
+                        url.pushState()
+                    }
                     tweetsContainer.appendChild(sidebar.createTweetElement(storyId, storyTweet, false));
                 });
             });
@@ -543,42 +738,55 @@ let sidebar = {
         }
     },
 
-    accountToIdsDisplay: async function(account, fromInit = false) {
-        try {        
-            // Call accountToIds asynchronously and await its result
-            let ids = await sidebar.accountToIds(account);
-            if(fromInit){
-                ids = ids.filter(id => base.initVisibleTweetIds.includes(id));
+    accountToIdsDisplay: async function(account) {
+        try {
+            // Get all IDs matching the account
+            let accountIds = await sidebar.accountToIds(account);
+            let finalIds;
+
+            // Check if a hashtag filter is also active
+            if (tweets.data.hashtag) {
+                let hashtagIds = await sidebar.hashtagToIds(tweets.data.hashtag);
+                // Find the intersection of account IDs and hashtag IDs
+                finalIds = accountIds.filter(id => hashtagIds.includes(id));
             } else {
-                ids = ids.filter(id => base.visibleTweetIds.includes(id));
-            }           
-            // Once you have the IDs, you can display the tweets
-            sidebar.displayTweetsbyIds(ids);
-            tweets.data.account = account
-            tweets.centerAroundMarkers(ids)
-            base.visibleTweetIds = ids
+                // No hashtag filter active, use only account IDs
+                finalIds = accountIds;
+            }
+
+            // Display the tweets matching the final set of IDs
+            sidebar.displayTweetsbyIds(finalIds);
+            tweets.data.account = account; // Store the active account filter
+            tweets.centerAroundMarkers(finalIds); // Center map on results
+            base.visibleTweetIds = finalIds; // Update the set of currently visible IDs
         } catch (error) {
-            console.error('Error waiting for tweet data:', error);
+            console.error('Error in accountToIdsDisplay:', error);
         }
     },
 
-    hashtagToIdsDisplay: async function(hashtag, fromInit = false) {
-        try {        
-            // Call accountToIds asynchronously and await its result
-            let ids = await sidebar.hashtagToIds(hashtag);
-            if(fromInit)
-                ids = ids.filter(id => base.initVisibleTweetIds.includes(id));
-            else
-                ids = ids.filter(id => base.visibleTweetIds.includes(id));
-            // console.log(ids)
-            // console.log(filteredIds)
-            // Once you have the IDs, you can display the tweets
-            sidebar.displayTweetsbyIds(ids);
-            tweets.data.hashtag = hashtag
-            tweets.centerAroundMarkers(ids)
-            base.visibleTweetIds = ids
+    hashtagToIdsDisplay: async function(hashtag) {
+        try {
+            // Get all IDs matching the hashtag
+            let hashtagIds = await sidebar.hashtagToIds(hashtag);
+            let finalIds;
+
+            // Check if an account filter is also active
+            if (tweets.data.account) {
+                let accountIds = await sidebar.accountToIds(tweets.data.account);
+                // Find the intersection of hashtag IDs and account IDs
+                finalIds = hashtagIds.filter(id => accountIds.includes(id));
+            } else {
+                // No account filter active, use only hashtag IDs
+                finalIds = hashtagIds;
+            }
+
+            // Display the tweets matching the final set of IDs
+            sidebar.displayTweetsbyIds(finalIds);
+            tweets.data.hashtag = hashtag; // Store the active hashtag filter
+            tweets.centerAroundMarkers(finalIds); // Center map on results
+            base.visibleTweetIds = finalIds; // Update the set of currently visible IDs
         } catch (error) {
-            console.error('Error waiting for tweet data:', error);
+            console.error('Error in hashtagToIdsDisplay:', error);
         }
     },
     
@@ -844,15 +1052,23 @@ let sidebar = {
         //     delete state.account;
         // }
 
-
         tweets.data.account = null
         tweets.data.hashtag = null
 
+        const userSearch = document.getElementById('user-search');
+        const hashtagSearch = document.getElementById('hashtag-search');
+        const termsContainer = document.getElementById('searched-terms-container');
+        
+        if (userSearch) userSearch.value = '';
+        if (hashtagSearch) hashtagSearch.value = '';
+        if (termsContainer) termsContainer.innerHTML = '';
 
         const searchInput = document.getElementById('term-search');
-        searchInput.value = '';
-        searchInput.dispatchEvent(new Event('input'));
+        if (searchInput) {
+            searchInput.value = '';
+            searchInput.dispatchEvent(new Event('input'));
+        }
     }
 }
 
-export default sidebar
+export default sidebar;

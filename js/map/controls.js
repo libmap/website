@@ -131,16 +131,15 @@ let controls = {
         }
       ]
 
-
-    controls.layersControls = L.control.layers.tree(baseTree, overlaysTree,  {
-            namedToggle: false,
-            selectorBack: false,
-            closedSymbol: '&#8862; &#128193;',//'&#8862; &#x1f5c0;',
-            openedSymbol: '&#8863; &#128194;',//'&#8863; &#x1f5c1;',
-            collapsed: width < 1800
-        });
-
-    controls.layersControls.collapseTree(true).addTo( base.map ).setPosition('topleft');
+    // REMOVED: Old layer control initialization
+    // controls.layersControls = L.control.layers.tree(baseTree, overlaysTree,  {
+    //         namedToggle: false,
+    //         selectorBack: false,
+    //         closedSymbol: '&#8862; &#128193;',//'&#8862; &#x1f5c0;',
+    //         openedSymbol: '&#8863; &#128194;',//'&#8863; &#x1f5c1;',
+    //         collapsed: width < 1800
+    //     });
+    // controls.layersControls.collapseTree(true).addTo( base.map ).setPosition('topleft');
 
     //let width = $(window).width()
     //

@@ -19,7 +19,7 @@
 
 .fab,
 .fab.fa-twitter {
-    opacity: 0.7 !important;
+    opacity: 1 !important; /* Default to fully opaque */
     z-index: -1;
 
     &.visible-after {
@@ -32,7 +32,7 @@
 
 .fab,
 .fab.fa-mastodon {
-    opacity: 0.7 !important;
+    opacity: 1 !important; /* Default to fully opaque */
     z-index: -1;
 
     &.visible-after {
@@ -52,7 +52,7 @@
     background-color: rgba(255, 255, 255, 0.2);
     position: absolute;
     left: 62%;
-    opacity: 0.4;
+    opacity: 1; /* Default to fully opaque */
     top: 50%;
     margin: -13px 0 0 -13px;
     z-index: -1;
@@ -67,7 +67,7 @@
         margin: 1px 0 0 1px;
         position: absolute;
         border-radius: 50%;
-        opacity: 0.4; /* Set initial opacity for the ::after pseudo-element */
+        opacity: 1; /* Default to fully opaque */
     }
 
     &.visible-after {
