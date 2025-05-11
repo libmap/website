@@ -300,16 +300,13 @@ let sidebar = {
             const sidebarElement = document.getElementById('messages-tab'); // Corrected ID
 
             if (headTweetElement && sidebarElement) {
-                // Calculate the position of the head tweet element relative to the sidebar container
-                const elementTopRelativeToSidebar = headTweetElement.offsetTop - sidebarElement.offsetTop;
-
                 // Determine the scroll behavior
                 const scrollBehavior = speed === 'smooth' ? 'smooth' : 'auto';
 
-                // Scroll the sidebar container
-                sidebarElement.scrollTo({
-                    top: elementTopRelativeToSidebar,
-                    behavior: scrollBehavior
+                // Use scrollIntoView on the target element
+                headTweetElement.scrollIntoView({
+                    behavior: scrollBehavior,
+                    block: 'start' // Scroll to the top of the element
                 });
             } else if (sidebarElement) {
                 // Scroll to the top if the element doesn't exist
@@ -347,9 +344,19 @@ let sidebar = {
 
         visibleTweets = 10;
         //searchTerm = id;
-        //document.getElementById('tweets').innerHTML = '';
+        const tweetsContainer = document.getElementById('tweets');
+        tweetsContainer.innerHTML = ''; // Clear current tweets
 
-        await this.displayTweetsbyIds(id);
+        const tweetData = await tweetDataPromise;
+        const tweet = tweetData[id];
+
+        // Append the selected tweet and its story
+        tweetsContainer.appendChild(sidebar.createTweetElement(id, tweet, true));
+        const storyTweets = sidebar.getTweetsOfStory(tweetData, id);
+        storyTweets.forEach(([storyId, storyTweet]) => {
+            tweetsContainer.appendChild(sidebar.createTweetElement(storyId, storyTweet, false));
+        });
+
 
         // Wait for tweet images to load before scrolling
         const images = document.querySelectorAll('.post-image');
@@ -681,8 +688,12 @@ let sidebar = {
 
             // Clear previous tweets only if it's the first page
             tweetsContainer.innerHTML = '';
-            // Clear all markers from the map layer
-            base.layerSets.tweets.layers.tweets.clearLayers();
+
+            // Only clear markers if displaying a list of tweets, not when selecting a single tweet
+            if (!ids || ids.length > 1) {
+                 base.layerSets.tweets.layers.tweets.clearLayers();
+            }
+
             let tweetsToDisplay = []
 
             let markers = []; // Use let to declare the markers array
@@ -693,8 +704,8 @@ let sidebar = {
                     markers.push(marker);
                 }
                 tweetsToDisplay.push(id)
-                // Add the marker back to the map layer if it exists
-                if (marker) {
+                // Add the marker back to the map layer if it exists and layers were cleared
+                if (marker && (!ids || ids.length > 1)) {
                     base.layerSets.tweets.layers.tweets.addLayer(marker);
                     url.pushState()
                 }
@@ -706,8 +717,8 @@ let sidebar = {
                         markers.push(marker);
                     }
                     tweetsToDisplay.push(storyId)
-                    // Add the story tweet marker back to the map layer if it exists
-                    if (marker) {
+                    // Add the story tweet marker back to the map layer if it exists and layers were cleared
+                    if (marker && (!ids || ids.length > 1)) {
                         base.layerSets.tweets.layers.tweets.addLayer(marker);
                         url.pushState()
                     }
@@ -715,8 +726,25 @@ let sidebar = {
                 });
             });
 
-            if (markers.length > 0) {
-                let group = new L.featureGroup(markers); 
+            // If a single tweet is selected, ensure its marker is on the map and highlighted
+            if (ids && ids.length === 1) {
+                const selectedTweetId = ids[0];
+                const selectedTweetMarker = tweets.data.tweetIdToMarker[selectedTweetId.toString()];
+                if (selectedTweetMarker) {
+                    // Add the marker to the layer if it's not already there
+                    if (!base.layerSets.tweets.layers.tweets.hasLayer(selectedTweetMarker)) {
+                         base.layerSets.tweets.layers.tweets.addLayer(selectedTweetMarker);
+                         url.pushState();
+                    }
+                    // You might want to add code here to visually highlight the selected marker
+                    // This could involve changing the marker's icon or adding a pulsating effect.
+                    // For now, we ensure it's visible.
+                }
+            }
+
+
+            if (markers.length > 0 && (!ids || ids.length > 1)) {
+                let group = new L.featureGroup(markers);
                 
                 // Get the layers in the group
                 let layers = group.getLayers();

@@ -114,13 +114,13 @@
   }
 
   .tab-button {
-    padding: 10px 15px;
+    padding: 3px 15px;
     border: none;
     background-color: transparent;
     cursor: pointer;
     font-size: 1rem;
     color: #555;
-    border-bottom: 3px solid transparent; // For active indicator
+    border-bottom: 2px solid transparent; // For active indicator
     transition: all 0.2s ease-in-out;
     flex-grow: 1; // Make buttons share space equally
     text-align: center;

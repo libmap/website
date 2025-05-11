@@ -128,34 +128,18 @@ let manager = {
     activateMarker: function (id) {
         let marker = manager.data.tweetIdToMarker[id.toString()];
 
-        //console.log(marker._leaflet_id)
+        // Remove 'selected' class from the previously active tweet's marker
+        if (manager.previousTweetId) {
+            let previousMarker = manager.data.tweetIdToMarker[manager.previousTweetId.toString()];
+            if (previousMarker && previousMarker._icon) {
+                L.DomUtil.removeClass(previousMarker._icon, 'selected');
+            }
+        }
 
-        // function logVisibleClusters() {
-        //     var parent;
-        //     var visibleClusterMarkers = [];
-        //     var bounds = base.map.getBounds();
-        //     manager.clusters.eachLayer(function (marker) {
-        //       parent = tweets.clusters.getVisibleParent(marker);
-        //       if (parent && (typeof visibleClusterMarkers[parent._leaflet_id] == 'undefined')) {
-        //         visibleClusterMarkers[parent._leaflet_id] = parent;
-        //       }
-        //     });
-        //     visibleClusterMarkers.forEach(function(clusterMarker) {
-        //       if(clusterMarker._leaflet_id != "undefined"){
-        //         if (marker._leaflet_id == clusterMarker._leaflet_id) {
-        //           console.log('visible: ', clusterMarker);
-        //         }
-        //       }
-        //
-        //     });
-        //   }
-
-        //logVisibleClusters()
-
-
-        manager.deactivateMarkers();
-        if (marker && marker._icon)
+        // Add 'selected' class to the currently active tweet's marker
+        if (marker && marker._icon) {
             L.DomUtil.addClass(marker._icon, 'selected');
+        }
     },
 
     visibleMarker: function (id) {
