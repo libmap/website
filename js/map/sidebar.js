@@ -327,9 +327,9 @@ let sidebar = {
 
 
 
-    selectTweet: async function (id) {
+    selectTweet: async function (clickedId) { // Renamed parameter for clarity
         // Presumably, 'history' is a custom object or API you're using
-        history.push(id);
+        history.push(clickedId);
         
         // let class_bb = document.querySelector('.back-btn');
         // class_bb.classList.remove('hidden');
@@ -342,23 +342,39 @@ let sidebar = {
             lastVisibleTweets = visibleTweets;
         }
 
-        visibleTweets = 10;
-        //searchTerm = id;
+        visibleTweets = 10; // This might be related to pagination logic
+        //searchTerm = clickedId;
         const tweetsContainer = document.getElementById('tweets');
         tweetsContainer.innerHTML = ''; // Clear current tweets
 
         const tweetData = await tweetDataPromise;
-        const tweet = tweetData[id];
 
-        // Append the selected tweet and its story
-        tweetsContainer.appendChild(sidebar.createTweetElement(id, tweet, true));
-        const storyTweets = sidebar.getTweetsOfStory(tweetData, id);
+        // Determine the actual head tweet ID for the story
+        const actualHeadTweetId = sidebar.getHeadTweetById(clickedId, tweetData);
+
+        if (!actualHeadTweetId) {
+            console.error(`Could not find head tweet for ID: ${clickedId}. Cannot display story.`);
+            // Optionally, display an error message in the sidebar
+            return;
+        }
+
+        const headTweetObject = tweetData[actualHeadTweetId];
+        if (!headTweetObject) {
+            console.error(`Could not find tweet data for head tweet ID: ${actualHeadTweetId}.`);
+            return;
+        }
+
+        // Append the actual head tweet of the story
+        tweetsContainer.appendChild(sidebar.createTweetElement(actualHeadTweetId, headTweetObject, true));
+
+        // Append the story tweets related to the actual head tweet
+        const storyTweets = sidebar.getTweetsOfStory(tweetData, actualHeadTweetId);
         storyTweets.forEach(([storyId, storyTweet]) => {
             tweetsContainer.appendChild(sidebar.createTweetElement(storyId, storyTweet, false));
         });
 
 
-        // Wait for tweet images to load before scrolling
+        // Wait for tweet images to load before scrolling (existing logic)
         const images = document.querySelectorAll('.post-image');
         await Promise.all(Array.from(images).map(img => {
             if (img.complete) {
@@ -370,7 +386,9 @@ let sidebar = {
             });
         }));
 
-        sidebar.scrollStartOrCenter(id);
+        // Scroll to the originally clicked tweet (which could be the head or a sub-tweet)
+        // tweets.activeTweet should be set to clickedId by the caller for highlighting.
+        sidebar.scrollStartOrCenter(clickedId);
 
     },
     scrollStartOrCenter: function(id, speed = 'instant') {

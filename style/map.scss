@@ -468,12 +468,15 @@ img {
 
 
 .tweet-container .story-head {
-    border-top: 1px solid rgb(226, 229, 230) !important;
+    border-top: 3px solid #4A90E2 !important; /* Thicker and more distinct blue color */
+    //padding-top: 5px; /* Add some padding to give space for the border and shadow */
     margin-top: 10px;
     margin-right: 10px;
-    position: relative; /* Needed for the pseudo-element */
-    transition: background-color 0.3s;
+    position: relative; /* Needed for the pseudo-element and shadow */
+    transition: background-color 0.3s, border-color 0.3s;
     border-bottom-left-radius: 140px;
+    border-bottom-right-radius: 140px;
+    box-shadow: 0 -2px 4px rgba(74, 144, 226, 0.3); /* Subtle shadow matching the border color */
 }
 
 .tweet-container .story-indent {
@@ -530,7 +533,7 @@ img {
 
 .message {
     border-right: 2px solid transparent; /* Add a black border around the content */
-    padding: 14px; /* Optional: Add padding for better visual appearance */
+    padding: 20px; /* Optional: Add padding for better visual appearance */
     //padding-bottom: 0px;
     padding-top: 15px;
     padding-bottom: 5px;
@@ -738,3 +741,102 @@ img {
 @import 'map/bottomsheet.scss';
 
 @import 'map/scripts/Control.MagnifyingGlass.scss';
+
+/* Tab styles */
+.tabs {
+  display: flex;
+  justify-content: flex-start; /* Align tabs to the left */
+  border-bottom: 1px solid #ccc; /* Minimal separation */
+  margin-bottom: 10px;
+}
+
+.tab-button {
+  background-color: transparent;
+  border: none;
+  padding: 8px 12px; /* Narrow padding */
+  cursor: pointer;
+  font-size: 0.9em; /* Slightly smaller font */
+  color: #555;
+  outline: none;
+  transition: color 0.3s ease, border-bottom-color 0.3s ease;
+  border-bottom: 2px solid transparent; /* For active state */
+  margin-right: 5px; /* Small space between tabs */
+}
+
+.tab-button.active {
+  color: #007bff; /* Highlight active tab */
+  border-bottom-color: #007bff; /* Active tab indicator */
+  font-weight: bold;
+}
+
+.tab-button:hover {
+  color: #0056b3; /* Darker color on hover */
+}
+
+/* Ensure tab content visibility is handled by JS */
+.tab-content {
+  display: none;
+}
+
+.tab-content.active {
+  display: block;
+}
+
+/* Tab styles - Revised for button-like appearance */
+.tabs {
+  display: flex;
+  //padding: 5px 5px 0 5px; /* Padding for the container, 0 at bottom to connect with active tab */
+  background-color: #f1f3f5; /* Light grey background for the tab bar area */
+  border-bottom: 1px solid #dee2e6; /* Separator line for the tab bar */
+  margin-bottom: 0; /* Remove margin-bottom, content will attach directly */
+}
+
+.tab-button {
+  padding: 8px 15px; /* Padding for a button feel */
+  margin-right: 2px; /* Small gap between tabs */
+  border: 1px solid #ced4da; /* Default border for all tabs */
+  border-bottom: none; /* Remove bottom border, active tab will "sit" on the content */
+  background-color: #e9ecef; /* Default background for tabs */
+  color: #495057; /* Default text color */
+  font-size: 0.9em;
+  font-weight: 500; /* Slightly bolder text */
+  cursor: pointer;
+  outline: none;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  border-radius: 6px 6px 0 0; /* Rounded top corners */
+  position: relative; /* For z-index and positioning */
+  line-height: 1.4; /* Ensure text is well-centered */
+}
+
+.tab-button:hover:not(.active) {
+  background-color: #f1f3f5; /* Lighter background on hover for non-active */
+  border-color: #adb5bd; /* Slightly darker border on hover */
+  color: #212529;
+}
+
+.tab-button.active {
+  background-color: #ffffff; /* White background for the active tab */
+  color: #007bff; /* Primary color for active tab text */
+  border-color: #dee2e6; /* Match the tab bar's bottom border */
+  border-bottom: 1px solid #ffffff; /* "Connects" the tab to the content area below */
+  font-weight: 600; /* Bolder text for active tab */
+  z-index: 2; /* Ensure active tab is above others */
+  /* Make active tab appear slightly "lifted" by aligning its bottom border with content */
+  margin-bottom: -1px; /* Pulls the active tab down to cover the tab bar's bottom border */
+}
+
+/* Tab Content */
+.tab-content {
+  display: none; /* Hidden by default */
+  padding: 15px; /* Padding for the content area */
+  border: 1px solid #dee2e6; /* Border around content area */
+  border-top: none; /* Top border is handled by the tab bar / active tab */
+  background-color: #ffffff; /* White background for content */
+  /* border-radius: 0 0 6px 6px; /* Rounded bottom corners to match tabs, if desired */
+  /* Margin-bottom to separate from whatever is below the tabbed interface */
+  margin-bottom: 15px; 
+}
+
+.tab-content.active {
+  display: block; /* Shown when active */
+}
