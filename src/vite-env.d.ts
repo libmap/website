@@ -1,0 +1,15 @@
+/// <reference types="vite/client" />
+
+declare module 'leaflet-control-window'
+declare module 'leaflet-draw'
+declare module 'leaflet-easybutton'
+declare module 'leaflet-minimap'
+declare module 'leaflet-spin'
+declare module 'leaflet-contextmenu'
+declare module 'leaflet.control.layers.tree'
+declare module 'leaflet.locatecontrol'
+declare module 'protomaps-leaflet'
+declare module 'leaflet-geotiff-2'
+declare module 'leaflet-control-geocoder'
+declare module 'leaflet-sidebar'
+declare module 'leaflet.marker.highlight'

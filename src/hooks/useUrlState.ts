@@ -1,0 +1,230 @@
+import { useCallback } from 'react'
+import { useStore } from '@/store'
+import type { URLState } from '@/types'
+
+// Default map position (Vienna/Europe center)
+const DEFAULT_CENTER = { lat: 22.02455, lng: 0.08789 }
+const DEFAULT_ZOOM = 3
+
+const URL_CONFIG = {
+  prefix: '/map',
+  listDivider: ',',
+}
+
+/**
+ * Parse URL string to extract map state
+ * Format: /@account/~hashtag/map?ls=dark,tweets&z=4&lng=26.23535&lat=10.09867
+ */
+function parseUrlString(urlString: string): Partial<URLState> {
+  const result: Partial<URLState> = {
+    center: DEFAULT_CENTER,
+    zoom: DEFAULT_ZOOM,
+    layers: ['satellite', 'tweets'],
+  }
+
+  try {
+    // Handle relative URLs
+    const url = new URL(urlString, 'https://libmap.org')
+    const path = url.pathname
+    const search = url.searchParams
+
+    // Parse special keys from path (/@account, /~hashtag)
+    const pathParts = path.split('/').filter(Boolean)
+    for (const part of pathParts) {
+      if (part.startsWith('@')) {
+        result.account = part.slice(1)
+      } else if (part.startsWith('~')) {
+        result.hashtag = part.slice(1)
+      }
+    }
+
+    // Parse query parameters
+    const lat = search.get('lat')
+    const lng = search.get('lng')
+    const zoom = search.get('z')
+    const layers = search.get('ls')
+    const tweet = search.get('t')
+    const polygons = search.get('polygons')
+
+    if (lat && lng) {
+      result.center = {
+        lat: parseFloat(lat),
+        lng: parseFloat(lng),
+      }
+    }
+
+    if (zoom) {
+      result.zoom = parseInt(zoom, 10)
+    }
+
+    if (layers) {
+      result.layers = layers.split(URL_CONFIG.listDivider).filter((l) => l !== 'empty')
+    }
+
+    if (tweet) {
+      result.tweetId = tweet
+    }
+
+    if (polygons) {
+      result.polygon = polygons
+    }
+  } catch (e) {
+    console.error('Failed to parse URL:', urlString, e)
+  }
+
+  return result
+}
+
+/**
+ * Parse current URL to extract map state
+ * Format: /@account/~hashtag/map?ls=dark,tweets&z=4&lng=26.23535&lat=10.09867
+ */
+function parseUrl(): Partial<URLState> {
+  return parseUrlString(window.location.pathname + window.location.search)
+}
+
+/**
+ * Build URL from state
+ * Format: /@account/~hashtag/map?ls=dark,tweets&z=4&lng=26.23535&lat=10.09867
+ */
+function buildUrl(state: URLState): string {
+  const { center, zoom, layers, tweetId, account, hashtag, polygon } = state
+
+  // Build special keys path
+  const specialParts: string[] = []
+  if (account) {
+    specialParts.push(`@${account}`)
+  }
+  if (hashtag) {
+    specialParts.push(`~${hashtag}`)
+  }
+
+  const specialPath = specialParts.length > 0 ? '/' + specialParts.join('/') : ''
+
+  // Build query parameters
+  const params = new URLSearchParams()
+
+  // Filter out 'empty' layers
+  const validLayers = layers.filter((l) => l !== 'empty')
+  if (validLayers.length > 0) {
+    params.set('ls', validLayers.join(URL_CONFIG.listDivider))
+  }
+
+  params.set('z', zoom.toString())
+  params.set('lng', center.lng.toFixed(5))
+  params.set('lat', center.lat.toFixed(5))
+
+  if (tweetId) {
+    params.set('t', tweetId)
+  }
+
+  if (polygon) {
+    params.set('polygons', polygon)
+  }
+
+  return `${specialPath}${URL_CONFIG.prefix}?${params.toString()}`
+}
+
+export function useUrlState() {
+  const {
+    setMapView,
+    setVisibleLayers,
+    selectTweet,
+    setFilter,
+    setInitialized,
+    map,
+    layers,
+    tweets,
+  } = useStore()
+
+  const initFromUrl = useCallback(() => {
+    const urlState = parseUrl()
+
+    if (urlState.center && urlState.zoom !== undefined) {
+      setMapView(urlState.center, urlState.zoom)
+    }
+
+    if (urlState.layers) {
+      setVisibleLayers(urlState.layers)
+    }
+
+    if (urlState.tweetId) {
+      selectTweet(urlState.tweetId)
+    }
+
+    if (urlState.account) {
+      setFilter('account', urlState.account)
+    }
+
+    if (urlState.hashtag) {
+      setFilter('hashtag', urlState.hashtag)
+    }
+
+    setInitialized(true)
+  }, [setMapView, setVisibleLayers, selectTweet, setFilter, setInitialized])
+
+  const syncToUrl = useCallback(() => {
+    const state: URLState = {
+      center: map.center,
+      zoom: map.zoom,
+      layers: layers.visible,
+    }
+
+    if (tweets.activeTweetId) {
+      state.tweetId = tweets.activeTweetId
+    }
+    if (tweets.filters.account) {
+      state.account = tweets.filters.account
+    }
+    if (tweets.filters.hashtag) {
+      state.hashtag = tweets.filters.hashtag
+    }
+
+    const url = buildUrl(state)
+    window.history.replaceState({}, '', url)
+  }, [map.center, map.zoom, layers.visible, tweets.activeTweetId, tweets.filters])
+
+  /**
+   * Apply view from a URL string (e.g., from a tweet's URL)
+   * This sets the layers, zoom, and center based on the URL
+   */
+  const applyViewFromUrl = useCallback(
+    (urlString: string, animate = true) => {
+      const urlState = parseUrlString(urlString)
+      const mapInstance = useStore.getState().map.instance
+
+      if (!mapInstance) return
+
+      // Apply layers if specified
+      if (urlState.layers && urlState.layers.length > 0) {
+        setVisibleLayers(urlState.layers)
+      }
+
+      // Apply map view if center and zoom are specified
+      if (urlState.center && urlState.zoom !== undefined) {
+        if (animate) {
+          mapInstance.flyTo([urlState.center.lat, urlState.center.lng], urlState.zoom, {
+            duration: 1.5,
+          })
+        } else {
+          mapInstance.setView([urlState.center.lat, urlState.center.lng], urlState.zoom)
+        }
+        setMapView(urlState.center, urlState.zoom)
+      }
+
+      // Apply filters if specified
+      if (urlState.account) {
+        setFilter('account', urlState.account)
+      }
+      if (urlState.hashtag) {
+        setFilter('hashtag', urlState.hashtag)
+      }
+
+      // Sync to URL
+      syncToUrl()
+    },
+    [setMapView, setVisibleLayers, setFilter, syncToUrl]
+  )
+
+  return { initFromUrl, syncToUrl, applyViewFromUrl, parseUrl, buildUrl }
+}
