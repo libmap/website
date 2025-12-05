@@ -2,6 +2,8 @@ import { useEffect, useRef, useCallback, useMemo } from 'react'
 import L from 'leaflet'
 import { useStore } from '@/store'
 import { useTweets } from '@/hooks/useTweets'
+import { useUrlState } from '@/hooks/useUrlState'
+import { getTweetsOfStory, getHeadTweetById } from '@/utils/stories'
 import type { Tweet } from '@/types'
 
 // Marker icons based on tweet type
@@ -33,48 +35,84 @@ export function TweetMarkers() {
   const selectTweet = useStore((state) => state.selectTweet)
   const activeTweetId = useStore((state) => state.tweets.activeTweetId)
   const setStateBefore = useStore((state) => state.setStateBefore)
-  const filterByBounds = useStore((state) => state.tweets.filterByBounds)
-  const frozenBounds = useStore((state) => state.tweets.frozenBounds)
+  const pagination = useStore((state) => state.tweets.pagination)
+  const allTweetsMap = useStore((state) => state.tweets.data)
 
-  const { tweets, isLoading, updateVisibleTweets } = useTweets()
+  const { tweets: allTweets, visibleTweets, isLoading, updateVisibleTweets } = useTweets()
+  const { applyViewFromUrl } = useUrlState()
 
   const markersRef = useRef<Map<string, L.Marker>>(new Map())
   const layerGroupRef = useRef<L.LayerGroup | null>(null)
 
   const isTweetsVisible = visibleLayers.includes('tweets')
 
-  // Filter tweets for markers based on filterByBounds setting
-  // Use frozen bounds (captured when button clicked) instead of current bounds
+  // Calculate which page a tweet (or its head tweet) should be on
+  const calculatePageForTweet = useCallback(
+    (tweetId: string): number => {
+      // Get the head tweet ID for this tweet
+      const headTweetId = getHeadTweetById(tweetId, allTweetsMap)
+      if (!headTweetId) return 1
+
+      // Find the index of the head tweet in visibleTweets
+      const headTweetIndex = visibleTweets.findIndex((t) => t.id === headTweetId)
+      if (headTweetIndex === -1) return 1
+
+      // Calculate which page this tweet is on
+      const pageNumber = Math.floor(headTweetIndex / pagination.perPage) + 1
+      return pageNumber
+    },
+    [visibleTweets, allTweetsMap, pagination.perPage]
+  )
+
+  // Filter tweets to only show those in current sidebar page
+  // Include both head tweets AND their story tweets
   const tweetsToShow = useMemo(() => {
-    if (!filterByBounds || !frozenBounds) {
-      return tweets // Show all markers
-    }
-    // Filter to only tweets in frozen view
-    return tweets.filter((tweet) => {
-      const { lat, lng } = tweet.coordinates
-      return frozenBounds.contains([lat, lng])
+    // Apply pagination to visible tweets (which are head tweets only)
+    const start = (pagination.currentPage - 1) * pagination.perPage
+    const end = start + pagination.perPage
+    const paginatedHeadTweets = visibleTweets.slice(start, end)
+
+    // Also include all story tweets for these head tweets
+    const allTweetsToShow: Tweet[] = []
+
+    paginatedHeadTweets.forEach((headTweet) => {
+      // Add the head tweet
+      allTweetsToShow.push(headTweet)
+
+      // Add all story tweets for this head tweet
+      const storyTweets = getTweetsOfStory(allTweets, headTweet.id)
+      allTweetsToShow.push(...storyTweets)
     })
-  }, [tweets, filterByBounds, frozenBounds])
+
+    return allTweetsToShow
+  }, [visibleTweets, pagination.currentPage, pagination.perPage, allTweets])
 
   // Create popup content for a tweet
   const createPopupContent = useCallback((tweet: Tweet): string => {
+    // For Mastodon, text already contains HTML - use it directly
+    // For other sources, escape HTML entities for security
+    const displayText =
+      tweet.source === 'mastodon.social'
+        ? tweet.text
+        : tweet.text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+
     return `
       <div class="tweet-popup">
         <div class="tweet-popup-header">
           <strong>${tweet.author}</strong>
           <span class="tweet-handle">@${tweet.authorHandle}</span>
         </div>
-        <p class="tweet-text">${tweet.text}</p>
+        <p class="tweet-text">${displayText}</p>
         <div class="tweet-popup-footer">
           <time>${new Date(tweet.createdAt).toLocaleDateString()}</time>
           <span class="tweet-type ${tweet.type}">${tweet.type}</span>
         </div>
-        ${tweet.expandedUrl ? `<a href="${tweet.expandedUrl}" target="_blank" class="tweet-link">View original</a>` : ''}
+        <button class="tweet-activate-btn" data-tweet-id="${tweet.id}">View Details</button>
       </div>
     `
   }, [])
 
-  // Handle marker click
+  // Handle marker click - only select tweet, no navigation
   const handleMarkerClick = useCallback(
     (tweet: Tweet) => {
       // Save current state for "back" navigation
@@ -87,15 +125,39 @@ export function TweetMarkers() {
       }
 
       selectTweet(tweet.id)
+    },
+    [map, selectTweet, setStateBefore]
+  )
 
-      // Fly to tweet location
-      if (map) {
-        map.flyTo([tweet.coordinates.lat, tweet.coordinates.lng], Math.max(map.getZoom(), 10), {
+  // Handle full activation - matches sidebar behavior exactly
+  const handleTweetActivation = useCallback(
+    (tweet: Tweet) => {
+      if (!map) return
+
+      // Calculate which page this tweet should be on
+      const tweetPage = calculatePageForTweet(tweet.id)
+
+      // Save current state for back navigation (including calculated page)
+      const center = map.getCenter()
+      setStateBefore({
+        center: { lat: center.lat, lng: center.lng },
+        zoom: map.getZoom(),
+        page: tweetPage,
+      })
+
+      selectTweet(tweet.id)
+
+      // Apply the view from the tweet's URL (layers, zoom, location)
+      if (tweet.expandedUrl) {
+        applyViewFromUrl(tweet.expandedUrl, true)
+      } else {
+        // Fallback: just fly to the tweet's coordinates
+        map.flyTo([tweet.coordinates.lat, tweet.coordinates.lng], Math.max(map.getZoom(), 12), {
           duration: 1,
         })
       }
     },
-    [map, selectTweet, setStateBefore]
+    [map, setStateBefore, selectTweet, applyViewFromUrl, calculatePageForTweet]
   )
 
   // Create/update markers when tweets change
@@ -138,13 +200,34 @@ export function TweetMarkers() {
           className: 'tweet-popup-container',
         })
 
+        // Add event listener to popup button when popup opens
+        // Use requestAnimationFrame to ensure DOM is ready
+        marker.on('popupopen', () => {
+          requestAnimationFrame(() => {
+            const popup = marker.getPopup()
+            if (popup) {
+              const popupElement = popup.getElement()
+              if (popupElement) {
+                const button = popupElement.querySelector('.tweet-activate-btn') as HTMLElement
+                if (button) {
+                  button.onclick = (e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    handleTweetActivation(tweet)
+                  }
+                }
+              }
+            }
+          })
+        })
+
         marker.on('click', () => handleMarkerClick(tweet))
 
         layerGroupRef.current.addLayer(marker)
         currentMarkers.set(tweet.id, marker)
       }
     }
-  }, [map, tweetsToShow, isTweetsVisible, createPopupContent, handleMarkerClick])
+  }, [map, tweetsToShow, isTweetsVisible, createPopupContent, handleMarkerClick, handleTweetActivation])
 
   // Update visible tweets when map moves
   useEffect(() => {

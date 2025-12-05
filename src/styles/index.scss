@@ -270,6 +270,39 @@ body {
     border-color: var(--color-primary);
     background: rgba(59, 130, 246, 0.05);
   }
+
+  // Story head tweets (default styling)
+  &.story-head {
+    // Uses base styling
+  }
+
+  // Story tweets (indented replies)
+  &.story-indent {
+    margin-left: 20px;
+    margin-top: 8px;
+    border-left: 3px solid var(--color-border);
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+    padding-left: 12px;
+    background: rgba(0, 0, 0, 0.02);
+
+    .message-header {
+      .author {
+        font-size: 0.9em;
+      }
+
+      .handle {
+        font-size: 11px;
+      }
+    }
+
+    .message-text {
+      font-size: 12px;
+    }
+  }
+}
+
+.story-container {
+  margin-bottom: 16px;
 }
 
 .message-header {
@@ -292,6 +325,30 @@ body {
   margin: 0;
   font-size: 13px;
   line-height: 1.5;
+
+  // Styling for Mastodon HTML content
+  p {
+    margin: 0;
+    display: inline;
+  }
+
+  a {
+    color: var(--color-primary);
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  // Hide invisible spans (used for URL ellipsis in Mastodon)
+  .invisible {
+    display: none;
+  }
+
+  .ellipsis::after {
+    content: '…';
+  }
 }
 
 .message-footer {

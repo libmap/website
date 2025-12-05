@@ -3,6 +3,7 @@ import { useCallback, useEffect } from 'react'
 import { useStore } from '@/store'
 import { api } from '@/services/api'
 import type { Tweet } from '@/types'
+import { extractHeadTweets } from '@/utils/stories'
 
 export function useTweets() {
   const setTweets = useStore((state) => state.setTweets)
@@ -57,7 +58,8 @@ export function useTweets() {
       )
     }
 
-    return result
+    // Extract only head tweets for display (story tweets will be shown under their head tweets)
+    return extractHeadTweets(result)
   }, [tweets, frozenBounds, filters, filterByBounds])
 
   // Update visible tweet IDs when bounds/filters change

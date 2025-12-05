@@ -17,7 +17,9 @@ export interface Tweet {
   expandedUrl?: string | undefined
   media?: TweetMedia[] | undefined
   hashtags?: string[] | undefined
+  story?: string | undefined
   isStoryRoot?: boolean | undefined
+  source?: string | undefined
 }
 
 export interface TweetMedia {

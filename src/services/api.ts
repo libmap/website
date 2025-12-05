@@ -12,6 +12,7 @@ interface RawPythonTweet {
   avatar?: string
   media?: string[]
   source: string
+  story?: string
 }
 
 interface RawJavaPOI {
@@ -78,6 +79,8 @@ function transformPythonTweet(id: string, raw: RawPythonTweet): Tweet | null {
     expandedUrl: raw.url,
     hashtags: raw.hashtags,
     media,
+    story: raw.story,
+    source: raw.source,
   }
 }
 

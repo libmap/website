@@ -66,8 +66,9 @@ interface AppState {
   stateBefore: {
     center: Coordinates
     zoom: number
+    page?: number
   } | null
-  setStateBefore: (state: { center: Coordinates; zoom: number } | null) => void
+  setStateBefore: (state: { center: Coordinates; zoom: number; page?: number } | null) => void
 }
 
 export const useStore = create<AppState>()(
