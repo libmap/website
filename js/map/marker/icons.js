@@ -2,7 +2,7 @@ import 'leaflet';
 
 let iconsInfo = {
     pollution:  {
-        fonticon: "nf nf-mdi-periodic_table_co2",
+        fonticon: "nf nf-fae-butterfly",
         cssname: "pollution",
         title: "Pollution",
         question: "Who pollutes our planet?",

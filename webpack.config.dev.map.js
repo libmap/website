@@ -1,23 +1,26 @@
-const baseConfig = require('./webpack.config.base.js');
+const path = require('path');
 const { merge } = require('webpack-merge');
+const baseConfig = require('./webpack.config.base.js');
 
 module.exports = merge(baseConfig, {
-    mode: 'development',
-    devServer: {
-        static: 'map.html',
-        host: 'map.localhost',
-        host: '0.0.0.0',
-        historyApiFallback: {
-            rewrites: [
-                { from: /.*/, to: '/map.html' },
-            ]
-        },
-        allowedHosts: "all",
-        open: true,
-        liveReload: true
+  mode: 'development',
+  devServer: {
+    static: {
+      directory: path.join(__dirname),
     },
-    optimization: {
-        runtimeChunk: 'single'
+    host: '0.0.0.0',
+    historyApiFallback: {
+      rewrites: [
+        { from: /^\/map.*/, to: '/map.html' },
+        { from: /.*/, to: '/index.html' },
+      ],
     },
-    devtool: 'source-map'
+    allowedHosts: 'all',
+    open: true,
+    liveReload: true,
+  },
+  optimization: {
+    runtimeChunk: 'single',
+  },
+  devtool: 'source-map',
 });

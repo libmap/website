@@ -45,10 +45,10 @@
   }
   .bottom-sheet .content {
 
-    border-top: 1px solid #93969b;
+    border-top: 1px solid #e0e4e8;
     width: 100%;
     position: relative;
-    background: #f1f3f5;
+    background: #ffffff;
     max-height: 100vh;
     height: 50vh;
     max-width: 1150px;
@@ -57,9 +57,9 @@
     padding-right: 20px;
     padding-bottom: 0px;
     transform: translateY(100%);
-    //border-radius: 12px 12px 0 0;
-    box-shadow: 0 10px 20px rgba(0,0,0,0.03);
-    transition: 0.3s ease;
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -4px 24px rgba(0,0,0,0.1), 0 -2px 8px rgba(0,0,0,0.05);
+    transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
   .bottom-sheet.show .content{
     transform: translateY(0%);
@@ -80,13 +80,26 @@
     user-select: none;
     padding: 25px;
     margin-top: -25px;
+    transition: transform 0.2s ease;
+  }
+  .header .drag-icon:hover {
+    transform: scale(1.1);
+  }
+  .header .drag-icon:active {
+    cursor: grabbing;
   }
   .header .drag-icon span {
-    height: 4px;
-    width: 40px;
+    height: 5px;
+    width: 48px;
     display: block;
-    background: #C7D0E1;
+    background: linear-gradient(90deg, #d1d5db 0%, #9ca3af 50%, #d1d5db 100%);
     border-radius: 50px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+  }
+  .header .drag-icon:hover span {
+    background: linear-gradient(90deg, #9ca3af 0%, #6b7280 50%, #9ca3af 100%);
+    width: 56px;
   }
   .bottom-sheet .body {
     height: 100%;
@@ -108,138 +121,209 @@
   // --- New Tab Styles ---
   .tabs {
     display: flex;
-    border-bottom: 1px solid #ccc;
-    background-color: #f8f8f8; // Light background for tabs
-    position: sticky; // Make tabs stick to the top of the body scroll
-    top: 0; // Stick to the top
-    z-index: 10; // Ensure tabs are above content
-    width: 100%; // Take full width
+    gap: 0;
+    border-bottom: 1px solid #e5e7eb;
+    background-color: #ffffff;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    width: 100%;
+    padding: 0;
   }
 
   .tab-button {
-    padding: 3px 15px;
+    padding: 8px 12px;
     border: none;
     background-color: transparent;
     cursor: pointer;
-    font-size: 1rem;
-    color: #555;
-    border-bottom: 2px solid transparent; // For active indicator
-    transition: all 0.2s ease-in-out;
-    flex-grow: 1; // Make buttons share space equally
+    font-size: 0.85rem;
+    font-weight: 400;
+    color: #9ca3af;
+    border-bottom: 2px solid transparent;
+    border-radius: 0;
+    transition: all 0.2s ease;
+    flex: 1 1 0;
     text-align: center;
+    position: relative;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
-  .tab-button:hover {
-    background-color: #eee;
-    color: #000;
+  .tab-button::before {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: #3b82f6;
+    transform: scaleX(0);
+    transition: transform 0.2s ease;
+  }
+
+  .tab-button:hover:not(.active) {
+    color: #6b7280;
   }
 
   .tab-button.active {
-    color: #007bff; // Active tab color
-    border-bottom-color: #007bff; // Active indicator
-    font-weight: bold;
+    color: #1f2937;
+    font-weight: 500;
+  }
+
+  .tab-button.active::before {
+    transform: scaleX(1);
   }
 
   .tab-content {
-    display: none; // Hide inactive tabs
-    padding-top: 10px; // Add some space below the sticky tabs
-    height: calc(100% - 41px); // Adjust height considering tab height + border
-    overflow-y: auto; // Allow scrolling within tab content
+    display: none;
+    padding-top: 16px;
+    height: calc(100% - 49px);
+    overflow-y: auto;
+    animation: fadeIn 0.3s ease-in-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 
   .tab-content.active {
-    display: block; // Show active tab
+    display: block;
   }
 
   // --- New Layer Control Styles ---
   #layers-tab .container {
-      padding: 15px; // Add padding within the layers tab
+      padding: 12px 16px;
   }
 
   #layers-tab h4 {
-      margin-top: 15px;
+      margin-top: 16px;
       margin-bottom: 8px;
-      font-size: 1.1rem;
-      color: #333;
-      border-bottom: 1px solid #eee;
-      padding-bottom: 5px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      padding-bottom: 4px;
   }
-   #layers-tab h5 { // Style for NO2 group heading
+   #layers-tab h5 {
       margin-top: 10px;
-      margin-bottom: 5px;
-      font-size: 1rem;
-      color: #555;
+      margin-bottom: 6px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: #4b5563;
   }
 
   .layer-control-item {
-      margin-bottom: 8px;
+      margin-bottom: 2px;
       display: flex;
       align-items: center;
+      padding: 8px 10px;
+      border-radius: 6px;
+      transition: background-color 0.2s ease;
+  }
+
+  .layer-control-item:hover {
+      background-color: #f3f4f6;
   }
 
   .layer-control-item input[type="radio"],
   .layer-control-item input[type="checkbox"] {
       margin-right: 10px;
       cursor: pointer;
-      // Style radio/checkboxes for modern look (optional, browser-dependent)
-      accent-color: #007bff; // Color the check/radio button itself
+      width: 16px;
+      height: 16px;
+      accent-color: #3b82f6;
   }
 
   .layer-control-item label {
-      font-size: 0.95rem;
-      color: #444;
+      font-size: 0.88rem;
+      color: #374151;
       cursor: pointer;
-      flex-grow: 1; // Allow label to take remaining space
+      flex-grow: 1;
+      font-weight: 400;
   }
-   .layer-group { // Style for the NO2 radio group container
-      border: 1px solid #eee;
-      padding: 10px;
-      margin-top: 10px;
-      border-radius: 4px;
+   .layer-group {
+      border: none;
+      padding: 8px 0;
+      margin-top: 4px;
+      border-radius: 0;
+      background-color: transparent;
   }
 
   // --- Collapsible Group Styles ---
   .layer-group-collapsible {
-      border: 1px solid #eee;
-      border-radius: 4px;
-      margin-bottom: 10px;
-      background-color: #fff; // Ensure background for details content
+      border: none;
+      border-radius: 0;
+      margin-bottom: 0;
+      background-color: transparent;
+      overflow: visible;
   }
 
   .layer-group-collapsible summary {
-      padding: 8px 12px;
+      padding: 10px 12px;
       cursor: pointer;
-      font-weight: bold;
-      color: #333;
-      background-color: #f9f9f9; // Slightly different background for summary
-      border-bottom: 1px solid #eee; // Separator when closed
-      list-style: none; // Remove default marker
+      font-weight: 500;
+      font-size: 0.9rem;
+      color: #374151;
+      background: transparent;
+      border-bottom: none;
+      list-style: none;
       display: flex;
       align-items: center;
+      transition: all 0.2s ease;
+      border-radius: 6px;
+      margin-bottom: 2px;
   }
-   .layer-group-collapsible summary::before { // Custom marker
-      content: '▶'; // Closed state
-      display: inline-block;
+
+  .layer-group-collapsible summary:hover {
+      background-color: #f3f4f6;
+      color: #1f2937;
+  }
+
+   .layer-group-collapsible summary::before {
+      content: '›';
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       margin-right: 8px;
-      font-size: 0.8em;
-      transition: transform 0.2s ease-in-out;
+      font-size: 1.3em;
+      font-weight: 600;
+      color: #9ca3af;
+      width: 20px;
+      height: 20px;
+      transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), color 0.2s ease;
+  }
+
+  .layer-group-collapsible summary:hover::before {
+      color: #6b7280;
   }
 
   .layer-group-collapsible[open] > summary::before {
-      transform: rotate(90deg); // Open state
+      transform: rotate(90deg);
+      color: #3b82f6;
   }
-
 
   .layer-group-collapsible[open] > summary {
-      border-bottom: 1px solid #eee; // Keep separator when open
+      color: #1f2937;
+      background-color: transparent;
+      margin-bottom: 4px;
   }
 
-  .layer-group-collapsible > div, // Direct children (checkboxes)
-  .layer-group-collapsible > details { // Nested details
-      padding-left: 15px; // Indent content within details
-      padding-top: 5px;
-      padding-bottom: 5px;
+  .layer-group-collapsible > div,
+  .layer-group-collapsible > details {
+      padding-left: 28px;
+      padding-top: 0px;
+      padding-bottom: 4px;
   }
    .layer-group-collapsible .layer-control-item.sub-item {
-       padding-left: 15px; // Further indent sub-items if needed (adjust as necessary)
+       padding-left: 8px;
    }

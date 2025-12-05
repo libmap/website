@@ -451,6 +451,11 @@ let manager = {
                     marker = L.marker(tweetInfo.state.center, { 
                         icon: icons['climateaction'],
                         tweetId: id });
+
+                } else if (tweetInfo.source == "bluesky") {
+                    marker = L.marker(tweetInfo.state.center, { 
+                        icon: icons['pollution'],
+                        tweetId: id });
                 }
 
 
