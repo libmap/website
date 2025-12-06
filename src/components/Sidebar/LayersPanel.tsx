@@ -17,10 +17,25 @@ export function LayersPanel() {
   // Current base layer (first visible base tile)
   const currentBase = visibleLayers.find((id) => BASE_TILES.some((t) => t.id === id)) ?? 'satellite'
 
+  // Current overlay layer (first visible overlay)
+  const currentOverlay = visibleLayers.find((id) => OVERLAY_LAYERS.some((o) => o.id === id)) ?? 'none'
+
   const handleBaseChange = (newBase: string) => {
     // Remove old base, add new one
     const withoutBase = visibleLayers.filter((id) => !BASE_TILES.some((t) => t.id === id))
     setVisibleLayers([newBase, ...withoutBase])
+  }
+
+  const handleOverlayChange = (newOverlay: string) => {
+    // Remove old overlay
+    const withoutOverlay = visibleLayers.filter((id) => !OVERLAY_LAYERS.some((o) => o.id === id))
+
+    // Add new overlay if not 'none'
+    if (newOverlay === 'none') {
+      setVisibleLayers(withoutOverlay)
+    } else {
+      setVisibleLayers([...withoutOverlay, newOverlay])
+    }
   }
 
   const handleOverlayToggle = (layerId: string) => {
@@ -55,12 +70,22 @@ export function LayersPanel() {
       <section className="layer-group">
         <h3 className="group-title">NO₂ Pollution</h3>
         <div className="layer-options">
+          <label className="layer-option radio">
+            <input
+              type="radio"
+              name="overlayLayer"
+              checked={currentOverlay === 'none'}
+              onChange={() => handleOverlayChange('none')}
+            />
+            <span className="layer-name">None</span>
+          </label>
           {visibleOverlays.map((layer) => (
-            <label key={layer.id} className="layer-option checkbox">
+            <label key={layer.id} className="layer-option radio">
               <input
-                type="checkbox"
-                checked={visibleLayers.includes(layer.id)}
-                onChange={() => handleOverlayToggle(layer.id)}
+                type="radio"
+                name="overlayLayer"
+                checked={currentOverlay === layer.id}
+                onChange={() => handleOverlayChange(layer.id)}
               />
               <span className="layer-name">{layer.name}</span>
             </label>

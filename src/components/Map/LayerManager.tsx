@@ -4,7 +4,7 @@ import { useStore } from '@/store'
 import { BASE_TILES, OVERLAY_LAYERS, POINT_LAYERS, getFuelColor } from '@/lib/layers'
 import type { BaseTileConfig, OverlayConfig, PointLayerConfig } from '@/lib/layers'
 
-const DATA_BASE_URL = 'https://raw.githubusercontent.com/decarbnow/data/master'
+const DATA_BASE_URL = 'https://raw.githubusercontent.com/decarbnow/data/refs/heads/master/layers'
 
 export function LayerManager() {
   const map = useStore((state) => state.map.instance)
@@ -17,26 +17,38 @@ export function LayerManager() {
   const createTileLayer = useCallback((config: BaseTileConfig): L.TileLayer | null => {
     if (!config.url || config.id === 'empty') return null
 
-    return L.tileLayer(config.url, {
+    const options: L.TileLayerOptions = {
       attribution: config.attribution,
       maxZoom: config.maxZoom,
       maxNativeZoom: config.maxNativeZoom,
-      subdomains: config.subdomains,
-    })
+    }
+
+    // Only add subdomains if defined
+    if (config.subdomains !== undefined) {
+      options.subdomains = config.subdomains
+    }
+
+    return L.tileLayer(config.url, options)
   }, [])
 
   // Create an overlay tile layer
   const createOverlayTileLayer = useCallback((config: OverlayConfig): L.TileLayer | null => {
     if (!config.url || config.type !== 'tile') return null
 
-    return L.tileLayer(config.url, {
+    const options: L.TileLayerOptions = {
       attribution: config.attribution,
-      maxZoom: config.maxZoom,
-      maxNativeZoom: config.maxNativeZoom,
-      minZoom: config.minZoom,
       opacity: config.opacity ?? 1,
-      tms: config.tms,
-    })
+      // Set high z-index to ensure overlays are always on top of base layers
+      zIndex: 1000,
+    }
+
+    // Only add optional properties if defined
+    if (config.maxZoom !== undefined) options.maxZoom = config.maxZoom
+    if (config.maxNativeZoom !== undefined) options.maxNativeZoom = config.maxNativeZoom
+    if (config.minZoom !== undefined) options.minZoom = config.minZoom
+    if (config.tms !== undefined) options.tms = config.tms
+
+    return L.tileLayer(config.url, options)
   }, [])
 
   // Calculate marker radius based on zoom

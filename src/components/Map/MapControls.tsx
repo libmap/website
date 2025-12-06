@@ -164,6 +164,7 @@ export function MapControls() {
         {
           attribution: '© CARTO',
           maxZoom: 20,
+          subdomains: 'abc',
         }
       )
 

@@ -36,6 +36,21 @@ export function useTweets() {
         const { lat, lng } = tweet.coordinates
         return frozenBounds.contains([lat, lng])
       })
+
+      // Find story tweets in bounds and include their head tweets
+      // even if the head tweet is outside the bounds
+      const storyTweetsInBounds = result.filter((t) => t.story && t.story !== t.id)
+      const headTweetIdsNeeded = new Set(storyTweetsInBounds.map((t) => t.story!))
+
+      // Add head tweets that weren't in bounds but have story tweets that are
+      headTweetIdsNeeded.forEach((headTweetId) => {
+        if (!result.some((t) => t.id === headTweetId)) {
+          const headTweet = tweets.get(headTweetId)
+          if (headTweet) {
+            result.push(headTweet)
+          }
+        }
+      })
     }
 
     // Filter by account
