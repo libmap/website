@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import L from 'leaflet'
 import { useStore } from '@/store'
+import 'leaflet-easybutton'
 
 // Import Leaflet plugins
 import 'leaflet-control-geocoder'
@@ -13,6 +14,7 @@ import 'leaflet-control-geocoder/dist/Control.Geocoder.css'
 import 'leaflet.locatecontrol/dist/L.Control.Locate.min.css'
 import 'leaflet-minimap/dist/Control.MiniMap.min.css'
 import 'leaflet-draw/dist/leaflet.draw.css'
+import 'leaflet-easybutton/src/easy-button.css'
 
 // Extend Leaflet types for plugins
 declare module 'leaflet' {
@@ -77,9 +79,41 @@ declare module 'leaflet' {
   }
 }
 
+// EasyButton types
+declare module 'leaflet' {
+  namespace Control {
+    class EasyButton extends L.Control {
+      constructor(options: EasyButtonOptions | string, callback?: () => void)
+    }
+  }
+
+  interface EasyButtonOptions {
+    id?: string
+    position?: L.ControlPosition
+    states?: EasyButtonState[]
+    leafletClasses?: boolean
+    tagName?: string
+  }
+
+  interface EasyButtonState {
+    stateName: string
+    icon: string
+    title: string
+    onClick: (btn: any, map: L.Map) => void
+  }
+
+  function easyButton(options: EasyButtonOptions): Control.EasyButton
+}
+
 export function MapControls() {
   const map = useStore((state) => state.map.instance)
   const setMapView = useStore((state) => state.setMapView)
+  const selectTweet = useStore((state) => state.selectTweet)
+  const setFilter = useStore((state) => state.setFilter)
+  const setPage = useStore((state) => state.setPage)
+  const setStateBefore = useStore((state) => state.setStateBefore)
+  const setVisibleTweetIds = useStore((state) => state.setVisibleTweetIds)
+  const tweetsData = useStore((state) => state.tweets.data)
 
   const controlsRef = useRef<{
     zoom?: L.Control.Zoom
@@ -88,6 +122,7 @@ export function MapControls() {
     locate?: L.Control.Locate
     minimap?: L.MiniMap
     draw?: L.Control.Draw
+    homeButton?: L.Control.EasyButton
   }>({})
 
   const editableLayersRef = useRef<L.FeatureGroup | null>(null)
@@ -232,6 +267,49 @@ export function MapControls() {
       console.warn('Draw control not available:', e)
     }
 
+    // Home button
+    try {
+      const homeButton = (L as any).easyButton({
+        states: [
+          {
+            stateName: 'go-home',
+            icon: 'nf nf-fa-home',
+            title: 'Overview',
+            onClick: () => {
+              // Close tweet sidebar
+              selectTweet(null)
+
+              // Clear search filters
+              setFilter('account', null)
+              setFilter('hashtag', null)
+
+              // Reset to page 1
+              setPage(1)
+
+              // Reset to default state (matching old JS defaultState)
+              const defaultCenter = { lat: 22, lng: 0 }
+              const defaultZoom = 3
+              map.flyTo(defaultCenter, defaultZoom, { duration: 2 })
+              setMapView(defaultCenter, defaultZoom)
+
+              // Reset state before
+              setStateBefore(null)
+
+              // Show all tweets
+              const allTweetIds = Array.from(tweetsData.keys())
+              setVisibleTweetIds(allTweetIds)
+            },
+          },
+        ],
+      })
+
+      homeButton.setPosition('bottomright')
+      homeButton.addTo(map)
+      controlsRef.current.homeButton = homeButton
+    } catch (e) {
+      console.warn('Home button not available:', e)
+    }
+
     // Cleanup
     return () => {
       if (controlsRef.current.zoom) {
@@ -252,12 +330,15 @@ export function MapControls() {
       if (controlsRef.current.draw) {
         controlsRef.current.draw.remove()
       }
+      if (controlsRef.current.homeButton) {
+        controlsRef.current.homeButton.remove()
+      }
       if (editableLayersRef.current) {
         map.removeLayer(editableLayersRef.current)
       }
       controlsRef.current = {}
     }
-  }, [map, setMapView])
+  }, [map, setMapView, selectTweet, setFilter, setPage, setStateBefore, setVisibleTweetIds, tweetsData])
 
   return null
 }

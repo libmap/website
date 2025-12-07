@@ -146,6 +146,7 @@ body {
 .sidebar-content {
   flex: 1;
   overflow-y: auto;
+  background-color: skyblue;
 }
 
 // Messages panel
@@ -154,6 +155,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  background-color: skyblue;
 }
 
 .back-button {
@@ -177,7 +179,6 @@ body {
 
 .messages-count {
   font-size: 12px;
-  color: var(--color-text-muted);
   padding-bottom: 8px;
   border-bottom: 1px solid var(--color-border);
 }
@@ -224,7 +225,7 @@ body {
 
 .pagination-info {
   font-size: 12px;
-  color: var(--color-text-muted);
+  //color: var(--color-text-muted);
 }
 
 .filters-section {
@@ -286,7 +287,7 @@ body {
 
   &.active {
     border-color: var(--color-primary);
-    background: rgba(59, 130, 246, 0.05);
+    //background: rgba(59, 130, 246, 0.05);
   }
 
   // Story head tweets (default styling)
@@ -300,7 +301,6 @@ body {
     margin-top: 0;
     border-left: 15px solid var(--color-border);
     padding-left: 12px;
-    background: rgba(0, 0, 0, 0.02);
 
     .message-header {
       .author {
@@ -315,6 +315,31 @@ body {
     .message-text {
       font-size: 12px;
     }
+  }
+
+  // Blink animation for marker clicks
+  &.highlight-blink {
+    animation: highlight-blink 1.5s ease-in-out;
+  }
+}
+
+@keyframes highlight-blink {
+  0% {
+    background-color: var(--color-surface);
+  }
+  25% {
+    background-color: rgba(59, 130, 246, 0.2);
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+  }
+  50% {
+    background-color: rgba(59, 130, 246, 0.15);
+  }
+  75% {
+    background-color: rgba(59, 130, 246, 0.2);
+  }
+  100% {
+    background-color: var(--color-surface);
+    box-shadow: none;
   }
 }
 
@@ -403,46 +428,59 @@ body {
 // Layers panel
 .layers-panel {
   padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .layer-group {
-  margin-bottom: 20px;
+  padding: 12px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  transition: all 0.2s ease;
+
+  &:hover {
+    border-color: var(--color-primary);
+    box-shadow: var(--shadow-sm);
+  }
 }
 
 .group-title {
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: var(--color-text-muted);
-  margin: 0 0 8px 0;
+  color: var(--color-text);
+  margin: 0 0 12px 0;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .layer-options {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 
 .layer-option {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px;
+  //padding: 6px 8px;
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition: background 0.2s ease;
 
   &:hover {
-    background: var(--color-surface);
+    background: rgba(59, 130, 246, 0.05);
   }
 
   input {
     accent-color: var(--color-primary);
+    cursor: pointer;
   }
 
   .layer-name {
     font-size: 13px;
+    flex: 1;
   }
 }
 

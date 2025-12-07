@@ -36,6 +36,7 @@ interface AppState {
     visibleIds: string[]
     activeTweetId: string | null
     activeStoryId: string | null
+    scrollToTweetId: string | null
     filters: TweetFilters
     filterByBounds: boolean
     frozenBounds: LatLngBounds | null
@@ -48,6 +49,7 @@ interface AppState {
   setVisibleTweetIds: (ids: string[]) => void
   selectTweet: (id: string | null) => void
   selectStory: (id: string | null) => void
+  scrollToTweet: (id: string | null) => void
   setFilter: (type: keyof TweetFilters, value: string | null) => void
   setFilterByBounds: (value: boolean, frozenBounds?: LatLngBounds | null) => void
   setPage: (page: number) => void
@@ -127,6 +129,7 @@ export const useStore = create<AppState>()(
         visibleIds: [],
         activeTweetId: null,
         activeStoryId: null,
+        scrollToTweetId: null,
         filters: {
           account: null,
           hashtag: null,
@@ -155,6 +158,10 @@ export const useStore = create<AppState>()(
       selectStory: (activeStoryId) =>
         set((state) => ({
           tweets: { ...state.tweets, activeStoryId },
+        })),
+      scrollToTweet: (scrollToTweetId) =>
+        set((state) => ({
+          tweets: { ...state.tweets, scrollToTweetId },
         })),
       setFilter: (type, value) =>
         set((state) => ({

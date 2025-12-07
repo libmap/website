@@ -33,6 +33,7 @@ export function TweetMarkers() {
   const map = useStore((state) => state.map.instance)
   const visibleLayers = useStore((state) => state.layers.visible)
   const selectTweet = useStore((state) => state.selectTweet)
+  const scrollToTweet = useStore((state) => state.scrollToTweet)
   const activeTweetId = useStore((state) => state.tweets.activeTweetId)
   const setStateBefore = useStore((state) => state.setStateBefore)
   const pagination = useStore((state) => state.tweets.pagination)
@@ -112,21 +113,25 @@ export function TweetMarkers() {
     `
   }, [])
 
-  // Handle marker click - only select tweet, no navigation
+  // Handle marker click - only scroll to tweet in sidebar, no activation
   const handleMarkerClick = useCallback(
     (tweet: Tweet) => {
-      // Save current state for "back" navigation
-      if (map) {
-        const center = map.getCenter()
-        setStateBefore({
-          center: { lat: center.lat, lng: center.lng },
-          zoom: map.getZoom(),
-        })
+      // Calculate which page this tweet should be on
+      const tweetPage = calculatePageForTweet(tweet.id)
+
+      // Navigate to the correct page if needed
+      if (tweetPage !== pagination.currentPage) {
+        const setPage = useStore.getState().setPage
+        setPage(tweetPage)
       }
 
-      selectTweet(tweet.id)
+      // Scroll to the tweet in the sidebar without activating it
+      // Use a small delay to allow page change to render
+      setTimeout(() => {
+        scrollToTweet(tweet.id)
+      }, 100)
     },
-    [map, selectTweet, setStateBefore]
+    [scrollToTweet, calculatePageForTweet, pagination.currentPage]
   )
 
   // Handle full activation - matches sidebar behavior exactly

@@ -1,4 +1,4 @@
-import { useMemo, useEffect, useRef, useCallback } from 'react'
+import { useMemo, useEffect, useRef, useCallback, useState } from 'react'
 import { useStore } from '@/store'
 import { useTweets } from '@/hooks/useTweets'
 import { useUrlState } from '@/hooks/useUrlState'
@@ -28,7 +28,9 @@ export function MessagesPanel() {
   const { visibleTweets, isLoading, tweets } = useTweets()
   const { applyViewFromUrl } = useUrlState()
   const activeTweetId = useStore((state) => state.tweets.activeTweetId)
+  const scrollToTweetId = useStore((state) => state.tweets.scrollToTweetId)
   const selectTweet = useStore((state) => state.selectTweet)
+  const scrollToTweet = useStore((state) => state.scrollToTweet)
   const filters = useStore((state) => state.tweets.filters)
   const setFilter = useStore((state) => state.setFilter)
   const pagination = useStore((state) => state.tweets.pagination)
@@ -40,6 +42,10 @@ export function MessagesPanel() {
 
   // Refs for message cards to enable scrolling
   const messageRefs = useRef<Map<string, HTMLElement>>(new Map())
+  const messagesListRef = useRef<HTMLDivElement>(null)
+
+  // Track which tweet should be highlighted (for marker clicks)
+  const [highlightedTweetId, setHighlightedTweetId] = useState<string | null>(null)
 
   // Determine if we're in single story view or list view
   const isStoryView = activeTweetId !== null
@@ -105,6 +111,30 @@ export function MessagesPanel() {
     }
   }, [activeTweetId])
 
+  // Scroll to tweet without activating it (for marker clicks)
+  useEffect(() => {
+    if (!scrollToTweetId) return
+
+    const messageElement = messageRefs.current.get(scrollToTweetId)
+    if (messageElement) {
+      messageElement.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      })
+
+      // Highlight the message briefly
+      setHighlightedTweetId(scrollToTweetId)
+
+      // Remove highlight after animation completes (1.5 seconds)
+      setTimeout(() => {
+        setHighlightedTweetId(null)
+      }, 1500)
+    }
+
+    // Clear the scroll target after scrolling
+    scrollToTweet(null)
+  }, [scrollToTweetId, scrollToTweet])
+
   // Calculate and save page when tweet is activated from external link
   useEffect(() => {
     // Only run when a tweet is activated and we don't have a saved page yet
@@ -123,9 +153,23 @@ export function MessagesPanel() {
     })
   }, [activeTweetId, map, stateBefore, calculatePageForTweet, setStateBefore])
 
+  // Scroll to top when pagination changes
+  useEffect(() => {
+    if (messagesListRef.current && !isStoryView) {
+      // Find the scrollable parent (sidebar-content)
+      const scrollableParent = messagesListRef.current.closest('.sidebar-content')
+      if (scrollableParent) {
+        scrollableParent.scrollTop = 0
+      }
+    }
+  }, [pagination.currentPage, isStoryView])
+
   const handleTweetClick = (tweetId: string) => {
-    const tweet = visibleTweets.find((t) => t.id === tweetId)
-    if (!tweet || !map) return
+    if (!map) return
+
+    // Find the tweet in the full tweets map (works for both head tweets and story tweets)
+    const tweet = allTweetsMap.get(tweetId)
+    if (!tweet) return
 
     // Calculate which page this tweet should be on
     const tweetPage = calculatePageForTweet(tweetId)
@@ -244,7 +288,7 @@ export function MessagesPanel() {
       )}
 
       {/* Messages List */}
-      <div className="messages-list">
+      <div ref={messagesListRef} className="messages-list">
         {isStoryView && storyToDisplay ? (
           /* Single Story View */
           <div className="story-container">
@@ -257,7 +301,8 @@ export function MessagesPanel() {
                   messageRefs.current.delete(storyToDisplay.headTweet.id)
                 }
               }}
-              className={`message-card story-head ${activeTweetId === storyToDisplay.headTweet.id ? 'active' : ''}`}
+              className={`message-card story-head ${activeTweetId === storyToDisplay.headTweet.id ? 'active' : ''} ${highlightedTweetId === storyToDisplay.headTweet.id ? 'highlight-blink' : ''}`}
+              onClick={() => handleTweetClick(storyToDisplay.headTweet.id)}
             >
               <header className="message-header">
                 <span className="author">{storyToDisplay.headTweet.author}</span>
@@ -281,7 +326,8 @@ export function MessagesPanel() {
                     messageRefs.current.delete(storyTweet.id)
                   }
                 }}
-                className={`message-card story-indent ${activeTweetId === storyTweet.id ? 'active' : ''}`}
+                className={`message-card story-indent ${activeTweetId === storyTweet.id ? 'active' : ''} ${highlightedTweetId === storyTweet.id ? 'highlight-blink' : ''}`}
+                onClick={() => handleTweetClick(storyTweet.id)}
               >
                 <header className="message-header">
                   <span className="author">{storyTweet.author}</span>
@@ -318,7 +364,7 @@ export function MessagesPanel() {
                       messageRefs.current.delete(headTweet.id)
                     }
                   }}
-                  className={`message-card story-head ${activeTweetId === headTweet.id ? 'active' : ''}`}
+                  className={`message-card story-head ${activeTweetId === headTweet.id ? 'active' : ''} ${highlightedTweetId === headTweet.id ? 'highlight-blink' : ''}`}
                   onClick={() => handleTweetClick(headTweet.id)}
                 >
                   <header className="message-header">
@@ -343,7 +389,7 @@ export function MessagesPanel() {
                         messageRefs.current.delete(storyTweet.id)
                       }
                     }}
-                    className={`message-card story-indent ${activeTweetId === storyTweet.id ? 'active' : ''}`}
+                    className={`message-card story-indent ${activeTweetId === storyTweet.id ? 'active' : ''} ${highlightedTweetId === storyTweet.id ? 'highlight-blink' : ''}`}
                     onClick={() => handleTweetClick(storyTweet.id)}
                   >
                     <header className="message-header">
