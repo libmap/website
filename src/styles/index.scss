@@ -425,6 +425,15 @@ body {
   }
 }
 
+.source-badge {
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  font-size: 10px;
+  font-weight: 600;
+  background: #e0e7ff;
+  color: #4338ca;
+}
+
 // Layers panel
 .layers-panel {
   padding: 16px;
@@ -579,7 +588,7 @@ body {
 
   .leaflet-popup-content {
     margin: 0;
-    min-width: 200px;
+    width: 220px !important;
   }
 }
 
@@ -592,13 +601,34 @@ body {
     gap: 8px;
     margin-bottom: 8px;
 
-    strong {
-      font-size: 14px;
+    .tweet-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      object-fit: cover;
+      flex-shrink: 0;
     }
 
-    .tweet-handle {
-      color: var(--color-text-muted);
-      font-size: 12px;
+    .tweet-author-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+
+      strong {
+        font-size: 14px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .tweet-handle {
+        color: var(--color-text-muted);
+        font-size: 12px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
     }
   }
 
@@ -606,6 +636,21 @@ body {
     font-size: 13px;
     line-height: 1.4;
     margin: 0 0 8px 0;
+  }
+
+  .tweet-hashtags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 8px;
+
+    .hashtag {
+      font-size: 11px;
+      padding: 2px 6px;
+      background: var(--color-surface);
+      border-radius: var(--radius-sm);
+      color: var(--color-primary);
+    }
   }
 
   .tweet-popup-footer {
@@ -635,6 +680,15 @@ body {
         background: #bfdbfe;
         color: #1d4ed8;
       }
+    }
+
+    .tweet-source {
+      padding: 2px 6px;
+      border-radius: var(--radius-sm);
+      font-size: 10px;
+      font-weight: 600;
+      background: #e0e7ff;
+      color: #4338ca;
     }
   }
 

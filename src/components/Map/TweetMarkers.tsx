@@ -90,23 +90,32 @@ export function TweetMarkers() {
 
   // Create popup content for a tweet
   const createPopupContent = useCallback((tweet: Tweet): string => {
-    // For Mastodon, text already contains HTML - use it directly
-    // For other sources, escape HTML entities for security
-    const displayText =
-      tweet.source === 'mastodon.social'
-        ? tweet.text
-        : tweet.text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    const avatarUrl = tweet.authorAvatar && tweet.authorAvatar !== ''
+      ? tweet.authorAvatar
+      : '/static/avatar_icon.png'
+
+    const hashtagsHtml = tweet.hashtags && tweet.hashtags.length > 0
+      ? `<div class="tweet-hashtags">${tweet.hashtags.map(tag => `<span class="hashtag">#${tag}</span>`).join('')}</div>`
+      : ''
 
     return `
       <div class="tweet-popup">
         <div class="tweet-popup-header">
-          <strong>${tweet.author}</strong>
-          <span class="tweet-handle">@${tweet.authorHandle}</span>
+          <img
+            src="${avatarUrl}"
+            alt="${tweet.author}"
+            class="tweet-avatar"
+            onerror="this.onerror=null; this.src='/static/avatar_icon.png';"
+          />
+          <div class="tweet-author-info">
+            <strong>${tweet.author}</strong>
+            <span class="tweet-handle">@${tweet.authorHandle}</span>
+          </div>
         </div>
-        <p class="tweet-text">${displayText}</p>
+        ${hashtagsHtml}
         <div class="tweet-popup-footer">
           <time>${new Date(tweet.createdAt).toLocaleDateString()}</time>
-          <span class="tweet-type ${tweet.type}">${tweet.type}</span>
+          ${tweet.source ? `<span class="tweet-source">${tweet.source}</span>` : ''}
         </div>
         <button class="tweet-activate-btn" data-tweet-id="${tweet.id}">View Details</button>
       </div>
@@ -201,7 +210,8 @@ export function TweetMarkers() {
         })
 
         marker.bindPopup(createPopupContent(tweet), {
-          maxWidth: 300,
+          maxWidth: 250,
+          minWidth: 220,
           className: 'tweet-popup-container',
         })
 

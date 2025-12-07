@@ -311,7 +311,9 @@ export function MessagesPanel() {
               <MessageText tweet={storyToDisplay.headTweet} />
               <footer className="message-footer">
                 <time>{new Date(storyToDisplay.headTweet.createdAt).toLocaleDateString()}</time>
-                <span className={`type-badge ${storyToDisplay.headTweet.type}`}>{storyToDisplay.headTweet.type}</span>
+                {storyToDisplay.headTweet.source && (
+                  <span className="source-badge">{storyToDisplay.headTweet.source}</span>
+                )}
               </footer>
             </article>
 
@@ -336,7 +338,9 @@ export function MessagesPanel() {
                 <MessageText tweet={storyTweet} />
                 <footer className="message-footer">
                   <time>{new Date(storyTweet.createdAt).toLocaleDateString()}</time>
-                  <span className={`type-badge ${storyTweet.type}`}>{storyTweet.type}</span>
+                  {storyTweet.source && (
+                    <span className="source-badge">{storyTweet.source}</span>
+                  )}
                 </footer>
               </article>
             ))}
@@ -374,7 +378,9 @@ export function MessagesPanel() {
                   <MessageText tweet={headTweet} truncate={false} />
                   <footer className="message-footer">
                     <time>{new Date(headTweet.createdAt).toLocaleDateString()}</time>
-                    <span className={`type-badge ${headTweet.type}`}>{headTweet.type}</span>
+                    {headTweet.source && (
+                      <span className="source-badge">{headTweet.source}</span>
+                    )}
                   </footer>
                 </article>
 
@@ -399,7 +405,9 @@ export function MessagesPanel() {
                     <MessageText tweet={storyTweet} truncate={false} />
                     <footer className="message-footer">
                       <time>{new Date(storyTweet.createdAt).toLocaleDateString()}</time>
-                      <span className={`type-badge ${storyTweet.type}`}>{storyTweet.type}</span>
+                      {storyTweet.source && (
+                        <span className="source-badge">{storyTweet.source}</span>
+                      )}
                     </footer>
                   </article>
                 ))}
