@@ -34,7 +34,8 @@ export function useTweets() {
     if (filterByBounds && frozenBounds) {
       result = result.filter((tweet) => {
         const { lat, lng } = tweet.coordinates
-        return frozenBounds.contains([lat, lng])
+        // MapLibre uses [lng, lat] order (GeoJSON standard)
+        return frozenBounds.contains([lng, lat])
       })
 
       // Find story tweets in bounds and include their head tweets
@@ -94,7 +95,9 @@ export function useTweets() {
 
   return {
     tweets: Array.from(tweets.values()),
-    visibleTweets: visibleIds.map((id) => tweets.get(id)).filter((t): t is Tweet => t !== undefined),
+    visibleTweets: visibleIds
+      .map((id) => tweets.get(id))
+      .filter((t): t is Tweet => t !== undefined),
     isLoading: query.isLoading,
     isError: query.isError,
     error: query.error,
