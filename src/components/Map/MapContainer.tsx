@@ -7,7 +7,7 @@ import { LayerManager } from './LayerManager'
 import { TweetMarkers } from './TweetMarkers'
 import { SearchInViewButton } from './SearchInViewButton'
 
-import 'leaflet/dist/leaflet.css'
+import 'maplibre-gl/dist/maplibre-gl.css'
 
 export function MapContainer() {
   const containerRef = useRef<HTMLDivElement>(null)

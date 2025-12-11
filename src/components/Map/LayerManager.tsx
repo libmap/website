@@ -1,8 +1,9 @@
 import { useEffect, useRef, useCallback } from 'react'
-import L from 'leaflet'
+import maplibregl from 'maplibre-gl'
 import { useStore } from '@/store'
 import { BASE_TILES, OVERLAY_LAYERS, POINT_LAYERS, getFuelColor } from '@/lib/layers'
-import type { BaseTileConfig, OverlayConfig, PointLayerConfig } from '@/lib/layers'
+import { getStyleForBaseLayer } from '@/lib/layers/maplibreStyles'
+import type { OverlayConfig, PointLayerConfig } from '@/lib/layers'
 
 const DATA_BASE_URL = 'https://raw.githubusercontent.com/decarbnow/data/refs/heads/master/layers'
 
@@ -10,76 +11,193 @@ export function LayerManager() {
   const map = useStore((state) => state.map.instance)
   const visibleLayers = useStore((state) => state.layers.visible)
 
-  const layersRef = useRef<Map<string, L.Layer>>(new Map())
+  const loadedLayersRef = useRef<Set<string>>(new Set())
   const loadingRef = useRef<Set<string>>(new Set())
+  const prevBaseLayerRef = useRef<string | null>(null)
+  const popupRef = useRef<maplibregl.Popup | null>(null)
 
-  // Create a tile layer from config
-  const createTileLayer = useCallback((config: BaseTileConfig): L.TileLayer | null => {
-    if (!config.url || config.id === 'empty') return null
+  // Detect current base layer from visibleLayers
+  const currentBaseLayer = visibleLayers.find((id) => BASE_TILES.some((t) => t.id === id)) ?? 'satellite'
 
-    const options: L.TileLayerOptions = {
-      attribution: config.attribution,
-      maxZoom: config.maxZoom,
-      maxNativeZoom: config.maxNativeZoom,
+  // Handle base layer changes
+  useEffect(() => {
+    if (!map) return
+
+    // Initialize prevBaseLayerRef on first run (map already has initial style from useMap)
+    if (prevBaseLayerRef.current === null) {
+      prevBaseLayerRef.current = currentBaseLayer
+      return
     }
 
-    // Only add subdomains if defined
-    if (config.subdomains !== undefined) {
-      options.subdomains = config.subdomains
-    }
+    // Skip if base layer hasn't changed
+    if (currentBaseLayer === prevBaseLayerRef.current) return
 
-    return L.tileLayer(config.url, options)
+    // Set new base style - this will remove all layers
+    map.setStyle(getStyleForBaseLayer(currentBaseLayer))
+
+    // Re-add overlays after style loads
+    map.once('style.load', () => {
+      loadedLayersRef.current.clear()
+      // Overlays will be re-added by the visibleLayers effect
+    })
+
+    prevBaseLayerRef.current = currentBaseLayer
+  }, [map, currentBaseLayer])
+
+  // Add an overlay tile layer
+  const addOverlayTileLayer = useCallback(
+    (config: OverlayConfig) => {
+      if (!map || !config.url || loadedLayersRef.current.has(config.id)) return
+      if (map.getSource(config.id)) return
+
+      map.addSource(config.id, {
+        type: 'raster',
+        tiles: [config.url],
+        tileSize: 256,
+        maxzoom: config.maxNativeZoom ?? config.maxZoom ?? 22,
+        minzoom: config.minZoom ?? 0,
+        scheme: config.tms ? 'tms' : 'xyz',
+      })
+
+      map.addLayer({
+        id: config.id,
+        type: 'raster',
+        source: config.id,
+        paint: {
+          'raster-opacity': config.opacity ?? 0.8,
+        },
+      })
+
+      loadedLayersRef.current.add(config.id)
+    },
+    [map]
+  )
+
+  // Add GeoJSON overlay layer (for NO2 data)
+  const addGeoJSONOverlay = useCallback(
+    async (config: OverlayConfig) => {
+      if (!map || !config.url || loadedLayersRef.current.has(config.id)) return
+      if (map.getSource(config.id) || loadingRef.current.has(config.id)) return
+
+      loadingRef.current.add(config.id)
+
+      try {
+        const url = config.url.startsWith('http') ? config.url : `${DATA_BASE_URL}${config.url}`
+        const response = await fetch(url)
+        if (!response.ok) throw new Error(`Failed to load ${config.url}`)
+
+        const data = await response.json()
+
+        if (!map.getSource(config.id)) {
+          map.addSource(config.id, {
+            type: 'geojson',
+            data,
+          })
+
+          map.addLayer({
+            id: config.id,
+            type: 'fill',
+            source: config.id,
+            paint: {
+              'fill-color': config.style?.fillColor ?? '#FF0000',
+              'fill-opacity': config.style?.fillOpacity ?? 0.05,
+              'fill-outline-color': config.style?.color ?? '#F1EFE8',
+            },
+          })
+
+          loadedLayersRef.current.add(config.id)
+        }
+      } catch (error) {
+        console.error(`Error loading overlay ${config.id}:`, error)
+      } finally {
+        loadingRef.current.delete(config.id)
+      }
+    },
+    [map]
+  )
+
+  // Build popup content for point features
+  const buildPopupContent = useCallback(
+    (props: Record<string, unknown>, coords: number[]): string => {
+      let content = '<table class="styled-table"><tbody>'
+
+      if (props.asset_name || props.name || props.FacilityName || props.city) {
+        const name = props.asset_name || props.name || props.FacilityName || props.city
+        content += `<tr><td>Name:</td><td>${name}</td></tr>`
+      }
+
+      if (props.asset_type || props.primary_fuel || props.activity) {
+        const type = props.asset_type || props.primary_fuel || props.activity
+        content += `<tr><td>Type:</td><td>${type}</td></tr>`
+      }
+
+      if (typeof props.emissions_quantity === 'number') {
+        const mio = (props.emissions_quantity / 1000000).toFixed(2)
+        content += `<tr><td>CO2-Equiv.:</td><td>${mio} Mio. T</td></tr>`
+      }
+
+      if (typeof props.capacity_mw === 'number') {
+        content += `<tr><td>Capacity:</td><td>${props.capacity_mw.toLocaleString()} MW</td></tr>`
+      }
+
+      if (typeof props.population === 'number') {
+        content += `<tr><td>Population:</td><td>${props.population.toLocaleString()}</td></tr>`
+      }
+
+      if (props.country || props.registry) {
+        content += `<tr><td>Country:</td><td>${props.country || props.registry}</td></tr>`
+      }
+
+      if (typeof props.rank === 'number' || typeof props.rank_world === 'number') {
+        const rank = props.rank_world ?? props.rank
+        content += `<tr><td>Rank:</td><td>${rank}</td></tr>`
+      }
+
+      if (props.year || props.ReportingYear) {
+        content += `<tr><td>Year:</td><td>${props.year || props.ReportingYear}</td></tr>`
+      }
+
+      // Google Maps link
+      if (coords && coords.length >= 2) {
+        const gmapsUrl = `https://www.google.com/maps/place/${coords[1]},${coords[0]}/@${coords[1]},${coords[0]},1500m/data=!3m1!1e3`
+        content += `<tr><td>Get there:</td><td><a href="${gmapsUrl}" target="_blank">Google Maps</a></td></tr>`
+      }
+
+      content += '</tbody></table>'
+      return content
+    },
+    []
+  )
+
+  // Get circle color expression for a layer
+  const getCircleColor = useCallback((config: PointLayerConfig): maplibregl.ExpressionSpecification | string => {
+    if (config.id === 'energy' || config.id === 'power-plants') {
+      return [
+        'match',
+        ['get', 'primary_fuel'],
+        'Oil',
+        getFuelColor('Oil'),
+        'Coal',
+        getFuelColor('Coal'),
+        'Gas',
+        getFuelColor('Gas'),
+        'Gas/Oil',
+        getFuelColor('Gas/Oil'),
+        'Biomass',
+        getFuelColor('Biomass'),
+        config.color, // default
+      ] as maplibregl.ExpressionSpecification
+    }
+    return config.color
   }, [])
 
-  // Create an overlay tile layer
-  const createOverlayTileLayer = useCallback((config: OverlayConfig): L.TileLayer | null => {
-    if (!config.url || config.type !== 'tile') return null
+  // Add a GeoJSON point layer
+  const addPointLayer = useCallback(
+    async (config: PointLayerConfig) => {
+      if (!map || loadedLayersRef.current.has(config.id)) return
+      if (map.getSource(config.id) || loadingRef.current.has(config.id)) return
 
-    const options: L.TileLayerOptions = {
-      attribution: config.attribution,
-      opacity: config.opacity ?? 1,
-      // Set high z-index to ensure overlays are always on top of base layers
-      zIndex: 1000,
-    }
-
-    // Only add optional properties if defined
-    if (config.maxZoom !== undefined) options.maxZoom = config.maxZoom
-    if (config.maxNativeZoom !== undefined) options.maxNativeZoom = config.maxNativeZoom
-    if (config.minZoom !== undefined) options.minZoom = config.minZoom
-    if (config.tms !== undefined) options.tms = config.tms
-
-    return L.tileLayer(config.url, options)
-  }, [])
-
-  // Calculate marker radius based on zoom
-  const getRadiusForZoom = useCallback((zoom: number): number => {
-    const radiusMap: Record<number, number> = {
-      1: 1,
-      2: 1,
-      3: 1.5,
-      4: 2,
-      5: 2.5,
-      6: 3,
-      7: 4,
-      8: 5,
-      9: 6,
-      10: 8,
-      11: 10,
-      12: 12,
-      13: 14,
-      14: 16,
-      15: 18,
-      16: 20,
-      17: 22,
-      18: 24,
-    }
-    return radiusMap[zoom] ?? 6
-  }, [])
-
-  // Load and create a GeoJSON point layer
-  const loadPointLayer = useCallback(
-    async (config: PointLayerConfig): Promise<L.GeoJSON | null> => {
-      if (!map) return null
+      loadingRef.current.add(config.id)
 
       const url = config.extern ? config.url : `${DATA_BASE_URL}/${config.url}`
 
@@ -88,164 +206,145 @@ export function LayerManager() {
         if (!response.ok) throw new Error(`Failed to load ${config.url}`)
 
         const data = await response.json()
-        const zoom = map.getZoom()
-        const baseRadius = getRadiusForZoom(zoom)
 
-        const layer = L.geoJSON(data, {
-          pointToLayer: (feature, latlng) => {
-            const props = feature.properties as Record<string, unknown>
-            let radius = baseRadius
-            let opacity = 0.6
-            let color = config.color
-
-            // Adjust radius based on rank if available
-            if (typeof props.rank_world === 'number') {
-              radius = Math.max(baseRadius, baseRadius * (3 / Math.pow(props.rank_world, 0.25)))
-            } else if (typeof props.rank === 'number') {
-              radius = Math.max(baseRadius, baseRadius * (3 / Math.pow(props.rank, 0.25)))
-            } else if (typeof props.population === 'number') {
-              radius = Math.max(baseRadius, baseRadius * (Math.pow(props.population, 0.25) / 20))
-            }
-
-            // Adjust opacity based on emissions/capacity
-            if (typeof props.emissions_quantity === 'number') {
-              opacity = Math.min(0.85, Math.max(0.3, props.emissions_quantity / 20000000))
-            } else if (typeof props.capacity_mw === 'number') {
-              opacity = Math.min(0.4, Math.max(0.3, props.capacity_mw / 5000))
-            }
-
-            // Use fuel-specific color for power plants/energy
-            if (typeof props.primary_fuel === 'string') {
-              color = getFuelColor(props.primary_fuel)
-            } else if (typeof props.asset_type === 'string' && config.id === 'energy') {
-              color = getFuelColor(props.asset_type)
-            }
-
-            return L.circleMarker(latlng, {
-              radius,
-              stroke: true,
-              weight: opacity * 3,
-              fillOpacity: 0,
-              color,
-            })
-          },
-          onEachFeature: (feature, layer) => {
-            const props = feature.properties as Record<string, unknown>
-            const coords = (feature.geometry as GeoJSON.Point).coordinates
-
-            let popupContent = '<table class="styled-table"><tbody>'
-
-            // Build popup based on available properties
-            if (props.asset_name || props.name || props.FacilityName || props.city) {
-              const name = props.asset_name || props.name || props.FacilityName || props.city
-              popupContent += `<tr><td>Name:</td><td>${name}</td></tr>`
-            }
-
-            if (props.asset_type || props.primary_fuel || props.activity) {
-              const type = props.asset_type || props.primary_fuel || props.activity
-              popupContent += `<tr><td>Type:</td><td>${type}</td></tr>`
-            }
-
-            if (typeof props.emissions_quantity === 'number') {
-              const mio = (props.emissions_quantity / 1000000).toFixed(2)
-              popupContent += `<tr><td>CO2-Equiv.:</td><td>${mio} Mio. T</td></tr>`
-            }
-
-            if (typeof props.capacity_mw === 'number') {
-              popupContent += `<tr><td>Capacity:</td><td>${props.capacity_mw.toLocaleString()} MW</td></tr>`
-            }
-
-            if (typeof props.population === 'number') {
-              popupContent += `<tr><td>Population:</td><td>${props.population.toLocaleString()}</td></tr>`
-            }
-
-            if (props.country || props.registry) {
-              popupContent += `<tr><td>Country:</td><td>${props.country || props.registry}</td></tr>`
-            }
-
-            if (typeof props.rank === 'number' || typeof props.rank_world === 'number') {
-              const rank = props.rank_world ?? props.rank
-              popupContent += `<tr><td>Rank:</td><td>${rank}</td></tr>`
-            }
-
-            if (props.year || props.ReportingYear) {
-              popupContent += `<tr><td>Year:</td><td>${props.year || props.ReportingYear}</td></tr>`
-            }
-
-            // Google Maps link
-            if (coords && coords.length >= 2) {
-              const gmapsUrl = `https://www.google.com/maps/place/${coords[1]},${coords[0]}/@${coords[1]},${coords[0]},1500m/data=!3m1!1e3`
-              popupContent += `<tr><td>Get there:</td><td><a href="${gmapsUrl}" target="_blank">Google Maps</a></td></tr>`
-            }
-
-            popupContent += '</tbody></table>'
-            layer.bindPopup(popupContent, { maxWidth: 350 })
-          },
-        })
-
-        // Update circle sizes on zoom
-        map.on('zoomend', () => {
-          const newZoom = map.getZoom()
-          const newRadius = getRadiusForZoom(newZoom)
-          layer.eachLayer((l) => {
-            if (l instanceof L.CircleMarker) {
-              // Scale proportionally to original ratio
-              const currentRadius = l.getRadius()
-              const scaleFactor = newRadius / baseRadius
-              l.setRadius(Math.max(newRadius, currentRadius * scaleFactor * 0.8))
-            }
+        if (!map.getSource(config.id)) {
+          map.addSource(config.id, {
+            type: 'geojson',
+            data,
           })
-        })
 
-        return layer
+          // Add circle layer with zoom-based radius scaling
+          map.addLayer({
+            id: config.id,
+            type: 'circle',
+            source: config.id,
+            paint: {
+              'circle-radius': [
+                'interpolate',
+                ['linear'],
+                ['zoom'],
+                1,
+                1,
+                3,
+                1.5,
+                5,
+                2.5,
+                7,
+                4,
+                10,
+                8,
+                13,
+                14,
+                16,
+                20,
+                18,
+                24,
+              ],
+              'circle-color': getCircleColor(config),
+              'circle-opacity': 0.6,
+              'circle-stroke-width': 1.5,
+              'circle-stroke-color': config.color,
+              'circle-stroke-opacity': 0.8,
+            },
+          })
+
+          // Add click handler for popups
+          map.on('click', config.id, (e) => {
+            if (!e.features || e.features.length === 0) return
+
+            const feature = e.features[0]
+            if (!feature) return
+            const props = (feature.properties ?? {}) as Record<string, unknown>
+            const geometry = feature.geometry as GeoJSON.Point
+            const coords = geometry.coordinates
+
+            // Close existing popup
+            if (popupRef.current) {
+              popupRef.current.remove()
+            }
+
+            popupRef.current = new maplibregl.Popup({ maxWidth: '350px' })
+              .setLngLat(coords as [number, number])
+              .setHTML(buildPopupContent(props, coords))
+              .addTo(map)
+          })
+
+          // Change cursor on hover
+          map.on('mouseenter', config.id, () => {
+            map.getCanvas().style.cursor = 'pointer'
+          })
+
+          map.on('mouseleave', config.id, () => {
+            map.getCanvas().style.cursor = ''
+          })
+
+          loadedLayersRef.current.add(config.id)
+        }
       } catch (error) {
         console.error(`Error loading layer ${config.id}:`, error)
-        return null
+      } finally {
+        loadingRef.current.delete(config.id)
       }
     },
-    [map, getRadiusForZoom]
+    [map, getCircleColor, buildPopupContent]
+  )
+
+  // Remove a layer
+  const removeLayer = useCallback(
+    (layerId: string) => {
+      if (!map) return
+
+      // Remove event listeners
+      try {
+        map.off('click', layerId, () => {})
+        map.off('mouseenter', layerId, () => {})
+        map.off('mouseleave', layerId, () => {})
+      } catch {
+        // Ignore errors if handlers don't exist
+      }
+
+      if (map.getLayer(layerId)) {
+        map.removeLayer(layerId)
+      }
+      if (map.getSource(layerId)) {
+        map.removeSource(layerId)
+      }
+
+      loadedLayersRef.current.delete(layerId)
+    },
+    [map]
   )
 
   // Main effect to manage layers
   useEffect(() => {
     if (!map) return
 
-    const updateLayers = async () => {
+    // Wait for style to be loaded
+    const handleStyleLoad = () => {
       const currentLayers = new Set(visibleLayers)
 
-      // Remove layers that are no longer visible
-      for (const [layerId, layer] of layersRef.current.entries()) {
+      // Remove layers that should not be visible
+      for (const layerId of loadedLayersRef.current) {
+        // Skip base layers - they're handled separately
+        if (BASE_TILES.find((t) => t.id === layerId)) continue
+
         if (!currentLayers.has(layerId)) {
-          map.removeLayer(layer)
-          layersRef.current.delete(layerId)
+          removeLayer(layerId)
         }
       }
 
-      // Add/update layers that should be visible
+      // Add layers that should be visible
       for (const layerId of visibleLayers) {
-        // Skip if already loaded or currently loading
-        if (layersRef.current.has(layerId) || loadingRef.current.has(layerId)) {
-          continue
-        }
-
-        // Check base tiles
-        const baseTile = BASE_TILES.find((t) => t.id === layerId)
-        if (baseTile) {
-          const layer = createTileLayer(baseTile)
-          if (layer) {
-            layer.addTo(map)
-            layersRef.current.set(layerId, layer)
-          }
-          continue
-        }
+        // Skip base tiles - handled by setStyle
+        if (BASE_TILES.find((t) => t.id === layerId)) continue
 
         // Check overlay tiles
         const overlay = OVERLAY_LAYERS.find((o) => o.id === layerId)
-        if (overlay && overlay.type === 'tile') {
-          const layer = createOverlayTileLayer(overlay)
-          if (layer) {
-            layer.addTo(map)
-            layersRef.current.set(layerId, layer)
+        if (overlay) {
+          if (overlay.type === 'tile') {
+            addOverlayTileLayer(overlay)
+          } else if (overlay.type === 'geojson') {
+            addGeoJSONOverlay(overlay)
           }
           continue
         }
@@ -253,32 +352,27 @@ export function LayerManager() {
         // Check point layers
         const pointLayer = POINT_LAYERS.find((p) => p.id === layerId)
         if (pointLayer) {
-          loadingRef.current.add(layerId)
-          const layer = await loadPointLayer(pointLayer)
-          loadingRef.current.delete(layerId)
-
-          if (layer && currentLayers.has(layerId)) {
-            layer.addTo(map)
-            layersRef.current.set(layerId, layer)
-          }
+          addPointLayer(pointLayer)
         }
       }
     }
 
-    updateLayers()
-  }, [map, visibleLayers, createTileLayer, createOverlayTileLayer, loadPointLayer])
+    if (map.isStyleLoaded()) {
+      handleStyleLoad()
+    } else {
+      map.once('style.load', handleStyleLoad)
+    }
+  }, [map, visibleLayers, addOverlayTileLayer, addGeoJSONOverlay, addPointLayer, removeLayer])
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (map) {
-        for (const layer of layersRef.current.values()) {
-          map.removeLayer(layer)
-        }
+      if (popupRef.current) {
+        popupRef.current.remove()
       }
-      layersRef.current.clear()
+      loadedLayersRef.current.clear()
     }
-  }, [map])
+  }, [])
 
   return null
 }

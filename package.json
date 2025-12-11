@@ -27,6 +27,7 @@
     "@tanstack/react-query-devtools": "^5.62.0",
     "@types/leaflet": "^1.9.14",
     "@types/leaflet.markercluster": "^1.5.5",
+    "@types/mapbox__mapbox-gl-draw": "^1.4.9",
     "@types/node": "^22.10.1",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
@@ -69,6 +70,8 @@
     "webpack-remove-empty-scripts": "^1.1.1"
   },
   "dependencies": {
+    "@mapbox/mapbox-gl-draw": "^1.5.1",
+    "@maplibre/maplibre-gl-geocoder": "^1.9.1",
     "@tanstack/react-query": "^5.62.0",
     "framer-motion": "^11.13.1",
     "geojson": "^0.5.0",
@@ -79,6 +82,7 @@
     "leaflet-minimap": "^3.6.1",
     "leaflet.control.layers.tree": "^1.1.0",
     "leaflet.locatecontrol": "^0.79.0",
+    "maplibre-gl": "^5.14.0",
     "minimist": "^1.2.6",
     "protomaps-leaflet": "^1.24.2",
     "react": "^18.3.1",

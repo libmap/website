@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { devtools, subscribeWithSelector } from 'zustand/middleware'
-import type { Map as LeafletMap, LatLngBounds } from 'leaflet'
+import type { Map as MapLibreMap, LngLatBounds } from 'maplibre-gl'
 import type { Coordinates, Tweet, TweetFilters, LayerSet, LayerInstance } from '@/types'
 
 interface AppState {
@@ -10,14 +10,14 @@ interface AppState {
 
   // Map state
   map: {
-    instance: LeafletMap | null
+    instance: MapLibreMap | null
     center: Coordinates
     zoom: number
-    bounds: LatLngBounds | null
+    bounds: LngLatBounds | null
   }
-  setMapInstance: (map: LeafletMap | null) => void
+  setMapInstance: (map: MapLibreMap | null) => void
   setMapView: (center: Coordinates, zoom: number) => void
-  setMapBounds: (bounds: LatLngBounds) => void
+  setMapBounds: (bounds: LngLatBounds) => void
 
   // Layer state
   layers: {
@@ -39,7 +39,7 @@ interface AppState {
     scrollToTweetId: string | null
     filters: TweetFilters
     filterByBounds: boolean
-    frozenBounds: LatLngBounds | null
+    frozenBounds: LngLatBounds | null
     pagination: {
       currentPage: number
       perPage: number
@@ -51,7 +51,7 @@ interface AppState {
   selectStory: (id: string | null) => void
   scrollToTweet: (id: string | null) => void
   setFilter: (type: keyof TweetFilters, value: string | null) => void
-  setFilterByBounds: (value: boolean, frozenBounds?: LatLngBounds | null) => void
+  setFilterByBounds: (value: boolean, frozenBounds?: LngLatBounds | null) => void
   setPage: (page: number) => void
 
   // UI state

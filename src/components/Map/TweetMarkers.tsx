@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback, useMemo } from 'react'
-import L from 'leaflet'
+import maplibregl from 'maplibre-gl'
 import { useStore } from '@/store'
 import { useTweets } from '@/hooks/useTweets'
 import { useUrlState } from '@/hooks/useUrlState'
@@ -43,27 +43,24 @@ function getSourceBadgeClass(source?: string): string {
   return `tweet-source source-${safeSource}`
 }
 
-// Marker icons based on tweet type
+// Marker colors based on tweet type
 const MARKER_COLORS: Record<string, string> = {
   pollution: '#ef4444', // red
   climateaction: '#22c55e', // green
   transition: '#3b82f6', // blue
 }
 
-function createMarkerIcon(type: Tweet['type']): L.DivIcon {
+function createMarkerElement(type: Tweet['type']): HTMLElement {
   const color = MARKER_COLORS[type] ?? MARKER_COLORS.climateaction
 
-  return L.divIcon({
-    className: 'tweet-marker',
-    html: `
-      <div class="tweet-marker-pin" style="background-color: ${color}">
-        <div class="tweet-marker-inner"></div>
-      </div>
-    `,
-    iconSize: [24, 36],
-    iconAnchor: [12, 36],
-    popupAnchor: [0, -36],
-  })
+  const el = document.createElement('div')
+  el.className = 'tweet-marker'
+  el.innerHTML = `
+    <div class="tweet-marker-pin" style="background-color: ${color}">
+      <div class="tweet-marker-inner"></div>
+    </div>
+  `
+  return el
 }
 
 export function TweetMarkers() {
@@ -79,8 +76,8 @@ export function TweetMarkers() {
   const { tweets: allTweets, visibleTweets, isLoading, updateVisibleTweets } = useTweets()
   const { applyViewFromUrl } = useUrlState()
 
-  const markersRef = useRef<Map<string, L.Marker>>(new Map())
-  const layerGroupRef = useRef<L.LayerGroup | null>(null)
+  const markersRef = useRef<Map<string, maplibregl.Marker>>(new Map())
+  const popupsRef = useRef<Map<string, maplibregl.Popup>>(new Map())
 
   const isTweetsVisible = visibleLayers.includes('tweets')
 
@@ -205,8 +202,10 @@ export function TweetMarkers() {
         applyViewFromUrl(tweet.expandedUrl, true)
       } else {
         // Fallback: just fly to the tweet's coordinates
-        map.flyTo([tweet.coordinates.lat, tweet.coordinates.lng], Math.max(map.getZoom(), 12), {
-          duration: 1,
+        map.flyTo({
+          center: [tweet.coordinates.lng, tweet.coordinates.lat],
+          zoom: Math.max(map.getZoom(), 12),
+          duration: 1000,
         })
       }
     },
@@ -217,78 +216,69 @@ export function TweetMarkers() {
   useEffect(() => {
     if (!map || !isTweetsVisible) return
 
-    // Create layer group if needed
-    if (!layerGroupRef.current) {
-      layerGroupRef.current = L.layerGroup().addTo(map)
-    }
-
     const currentMarkers = markersRef.current
+    const currentPopups = popupsRef.current
     const tweetIds = new Set(tweetsToShow.map((t) => t.id))
 
     // Remove markers for tweets that no longer exist or are filtered out
     for (const [id, marker] of currentMarkers.entries()) {
       if (!tweetIds.has(id)) {
-        layerGroupRef.current.removeLayer(marker)
+        marker.remove()
         currentMarkers.delete(id)
+        currentPopups.get(id)?.remove()
+        currentPopups.delete(id)
       }
     }
 
     // Add/update markers for each tweet to show
     for (const tweet of tweetsToShow) {
       if (currentMarkers.has(tweet.id)) {
-        // Update existing marker if needed
+        // Update existing marker position if needed
         const marker = currentMarkers.get(tweet.id)!
-        const pos = marker.getLatLng()
+        const pos = marker.getLngLat()
         if (pos.lat !== tweet.coordinates.lat || pos.lng !== tweet.coordinates.lng) {
-          marker.setLatLng([tweet.coordinates.lat, tweet.coordinates.lng])
+          marker.setLngLat([tweet.coordinates.lng, tweet.coordinates.lat])
         }
       } else {
         // Create new marker
-        const marker = L.marker([tweet.coordinates.lat, tweet.coordinates.lng], {
-          icon: createMarkerIcon(tweet.type),
-        })
+        const el = createMarkerElement(tweet.type)
 
-        marker.bindPopup(createPopupContent(tweet), {
-          maxWidth: 250,
-          minWidth: 220,
+        const popup = new maplibregl.Popup({
+          offset: 25,
+          maxWidth: '250px',
           className: 'tweet-popup-container',
-        })
+        }).setHTML(createPopupContent(tweet))
+
+        const marker = new maplibregl.Marker({ element: el })
+          .setLngLat([tweet.coordinates.lng, tweet.coordinates.lat])
+          .setPopup(popup)
+          .addTo(map)
+
+        // Handle marker click
+        el.addEventListener('click', () => handleMarkerClick(tweet))
 
         // Add event listener to popup button when popup opens
-        // Use requestAnimationFrame to ensure DOM is ready
-        marker.on('popupopen', () => {
+        popup.on('open', () => {
           requestAnimationFrame(() => {
-            const popup = marker.getPopup()
-            if (popup) {
-              const popupElement = popup.getElement()
-              if (popupElement) {
-                const button = popupElement.querySelector('.tweet-activate-btn') as HTMLElement
-                if (button) {
-                  button.onclick = (e) => {
-                    e.preventDefault()
-                    e.stopPropagation()
-                    handleTweetActivation(tweet)
-                  }
+            const popupEl = popup.getElement()
+            if (popupEl) {
+              const button = popupEl.querySelector('.tweet-activate-btn') as HTMLElement
+              if (button) {
+                button.onclick = (e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  handleTweetActivation(tweet)
                 }
               }
             }
           })
         })
 
-        marker.on('click', () => handleMarkerClick(tweet))
-
-        layerGroupRef.current.addLayer(marker)
         currentMarkers.set(tweet.id, marker)
+        currentPopups.set(tweet.id, popup)
       }
     }
-  }, [
-    map,
-    tweetsToShow,
-    isTweetsVisible,
-    createPopupContent,
-    handleMarkerClick,
-    handleTweetActivation,
-  ])
+  }, [map, tweetsToShow, isTweetsVisible, createPopupContent, handleMarkerClick, handleTweetActivation])
 
   // Update visible tweets when map moves
   useEffect(() => {
@@ -304,20 +294,13 @@ export function TweetMarkers() {
     }
   }, [map, updateVisibleTweets])
 
-  // Show/hide layer group based on visibility
+  // Show/hide markers based on visibility
   useEffect(() => {
-    if (!map || !layerGroupRef.current) return
-
-    if (isTweetsVisible) {
-      if (!map.hasLayer(layerGroupRef.current)) {
-        layerGroupRef.current.addTo(map)
-      }
-    } else {
-      if (map.hasLayer(layerGroupRef.current)) {
-        map.removeLayer(layerGroupRef.current)
-      }
+    for (const marker of markersRef.current.values()) {
+      const el = marker.getElement()
+      el.style.display = isTweetsVisible ? '' : 'none'
     }
-  }, [map, isTweetsVisible])
+  }, [isTweetsVisible])
 
   // Highlight active tweet marker
   useEffect(() => {
@@ -325,20 +308,20 @@ export function TweetMarkers() {
 
     const marker = markersRef.current.get(activeTweetId)
     if (marker) {
-      marker.openPopup()
+      marker.togglePopup()
     }
   }, [activeTweetId])
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (map && layerGroupRef.current) {
-        map.removeLayer(layerGroupRef.current)
+      for (const marker of markersRef.current.values()) {
+        marker.remove()
       }
       markersRef.current.clear()
-      layerGroupRef.current = null
+      popupsRef.current.clear()
     }
-  }, [map])
+  }, [])
 
   if (isLoading) {
     return null

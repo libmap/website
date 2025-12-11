@@ -1,5 +1,3 @@
-import type L from 'leaflet'
-
 export interface BaseTileConfig {
   id: string
   name: string
@@ -25,7 +23,13 @@ export interface OverlayConfig {
   minZoom?: number
   opacity?: number
   tms?: boolean
-  style?: L.PathOptions
+  style?: {
+    color?: string
+    weight?: number
+    opacity?: number
+    fillColor?: string
+    fillOpacity?: number
+  }
 }
 
 export interface PointLayerConfig {

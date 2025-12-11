@@ -1,5 +1,3 @@
-import type { Layer, LayerGroup } from 'leaflet'
-
 export interface LayerConfig {
   id: string
   name: string
@@ -22,7 +20,8 @@ export interface LayerSet {
 export interface LayerInstance {
   id: string
   config: LayerConfig
-  layer: Layer | LayerGroup | null
+  sourceId: string | null
+  layerId: string | null
   isLoading: boolean
   isLoaded: boolean
 }

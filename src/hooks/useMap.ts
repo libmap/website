@@ -1,10 +1,12 @@
 import { useCallback, useRef } from 'react'
-import L from 'leaflet'
+import maplibregl, { Map as MapLibreMap, LngLatBoundsLike } from 'maplibre-gl'
 import { useStore } from '@/store'
+import { getStyleForBaseLayer } from '@/lib/layers/maplibreStyles'
+import { BASE_TILES } from '@/lib/layers'
 import type { Coordinates } from '@/types'
 
 // Store the map instance outside of React to prevent re-renders from destroying it
-let globalMapInstance: L.Map | null = null
+let globalMapInstance: MapLibreMap | null = null
 
 export function useMap() {
   const containerRef = useRef<HTMLDivElement | null>(null)
@@ -24,34 +26,40 @@ export function useMap() {
       // Get initial state directly from store (not reactive)
       const state = useStore.getState()
       const { center, zoom } = state.map
+      // Derive base layer from visibleLayers (same logic as LayerManager)
+      const baseLayer = state.layers.visible.find((id) => BASE_TILES.some((t) => t.id === id)) ?? 'satellite'
 
-      const leafletMap = L.map(container, {
-        zoomControl: false,
+      const map = new MapLibreMap({
+        container,
+        style: getStyleForBaseLayer(baseLayer),
+        center: [center.lng, center.lat], // MapLibre uses [lng, lat]
+        zoom,
         maxZoom: 19,
         minZoom: 2,
-      }).setView([center.lat, center.lng], zoom)
+      })
 
-      globalMapInstance = leafletMap
+      globalMapInstance = map
       isInitializedRef.current = true
       containerRef.current = container
-      setMapInstance(leafletMap)
 
-      // Set initial bounds immediately
-      setMapBounds(leafletMap.getBounds())
+      map.on('load', () => {
+        setMapInstance(map)
+        setMapBounds(map.getBounds())
+      })
 
       // Sync map movements to store (debounced to prevent rapid updates)
       let moveTimeout: ReturnType<typeof setTimeout> | null = null
-      leafletMap.on('moveend', () => {
+      map.on('moveend', () => {
         if (moveTimeout) clearTimeout(moveTimeout)
         moveTimeout = setTimeout(() => {
-          const mapCenter = leafletMap.getCenter()
-          const mapZoom = leafletMap.getZoom()
+          const mapCenter = map.getCenter()
+          const mapZoom = map.getZoom()
           setMapView({ lat: mapCenter.lat, lng: mapCenter.lng }, mapZoom)
-          setMapBounds(leafletMap.getBounds())
+          setMapBounds(map.getBounds())
         }, 100)
       })
 
-      return leafletMap
+      return map
     },
     [setMapInstance, setMapView, setMapBounds]
   )
@@ -75,17 +83,22 @@ export function useMap() {
     const targetZoom = zoom ?? globalMapInstance.getZoom()
 
     if (animate) {
-      globalMapInstance.flyTo([center.lat, center.lng], targetZoom, {
-        duration: 1.5,
+      globalMapInstance.flyTo({
+        center: [center.lng, center.lat],
+        zoom: targetZoom,
+        duration: 1500,
       })
     } else {
-      globalMapInstance.setView([center.lat, center.lng], targetZoom)
+      globalMapInstance.jumpTo({
+        center: [center.lng, center.lat],
+        zoom: targetZoom,
+      })
     }
   }, [])
 
-  const fitBounds = useCallback((bounds: L.LatLngBoundsExpression, padding = 50) => {
+  const fitBounds = useCallback((bounds: LngLatBoundsLike, padding = 50) => {
     if (!globalMapInstance) return
-    globalMapInstance.fitBounds(bounds, { padding: [padding, padding] })
+    globalMapInstance.fitBounds(bounds, { padding })
   }, [])
 
   return {
@@ -99,7 +112,7 @@ export function useMap() {
 
 export function useMapEvents(
   events: Partial<{
-    click: (e: L.LeafletMouseEvent) => void
+    click: (e: maplibregl.MapMouseEvent) => void
     moveend: () => void
     zoomend: () => void
   }>

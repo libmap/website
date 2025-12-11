@@ -387,8 +387,10 @@ export function MessagesPanel() {
       applyViewFromUrl(tweet.expandedUrl, true)
     } else {
       // Fallback: just fly to the tweet's coordinates
-      map.flyTo([tweet.coordinates.lat, tweet.coordinates.lng], Math.max(map.getZoom(), 12), {
-        duration: 1,
+      map.flyTo({
+        center: [tweet.coordinates.lng, tweet.coordinates.lat],
+        zoom: Math.max(map.getZoom(), 12),
+        duration: 1000,
       })
     }
   }
@@ -411,9 +413,10 @@ export function MessagesPanel() {
       }
 
       // Restore map state
-      map.setView([stateBefore.center.lat, stateBefore.center.lng], stateBefore.zoom, {
-        animate: true,
-        duration: 0.5,
+      map.flyTo({
+        center: [stateBefore.center.lng, stateBefore.center.lat],
+        zoom: stateBefore.zoom,
+        duration: 500,
       })
 
       setStateBefore(null)

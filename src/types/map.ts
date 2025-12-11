@@ -1,4 +1,4 @@
-import type { LatLngBounds, Map as LeafletMap } from 'leaflet'
+import type { LngLatBounds, Map as MapLibreMap } from 'maplibre-gl'
 
 export interface Coordinates {
   lat: number
@@ -8,11 +8,11 @@ export interface Coordinates {
 export interface MapState {
   center: Coordinates
   zoom: number
-  bounds: LatLngBounds | null
+  bounds: LngLatBounds | null
 }
 
 export interface MapViewState extends MapState {
-  map: LeafletMap | null
+  map: MapLibreMap | null
 }
 
 export interface URLState {

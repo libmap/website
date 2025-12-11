@@ -203,11 +203,16 @@ export function useUrlState() {
       // Apply map view if center and zoom are specified
       if (urlState.center && urlState.zoom !== undefined) {
         if (animate) {
-          mapInstance.flyTo([urlState.center.lat, urlState.center.lng], urlState.zoom, {
-            duration: 1.5,
+          mapInstance.flyTo({
+            center: [urlState.center.lng, urlState.center.lat],
+            zoom: urlState.zoom,
+            duration: 1500,
           })
         } else {
-          mapInstance.setView([urlState.center.lat, urlState.center.lng], urlState.zoom)
+          mapInstance.jumpTo({
+            center: [urlState.center.lng, urlState.center.lat],
+            zoom: urlState.zoom,
+          })
         }
         setMapView(urlState.center, urlState.zoom)
       }
