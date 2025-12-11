@@ -3,7 +3,18 @@ import { useStore } from '@/store'
 import { useTweets } from '@/hooks/useTweets'
 import { useUrlState } from '@/hooks/useUrlState'
 import { getTweetsOfStory, getHeadTweetById } from '@/utils/stories'
-import type { Tweet } from '@/types'
+import type { Tweet, TweetMedia } from '@/types'
+
+// Helper function to format date as YYYY-MM-DD HH:MM
+function formatDateTime(dateString: string): string {
+  const date = new Date(dateString)
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  return `${year}-${month}-${day} ${hours}:${minutes}`
+}
 
 // Helper component to render message text (handles HTML for Mastodon)
 function MessageText({ tweet, truncate = false }: { tweet: Tweet; truncate?: boolean }) {
@@ -22,6 +33,162 @@ function MessageText({ tweet, truncate = false }: { tweet: Tweet; truncate?: boo
 
   // For other sources, render plain text
   return <p className="message-text">{text}</p>
+}
+
+// Helper component to render hashtags
+function MessageHashtags({ tweet }: { tweet: Tweet }) {
+  if (!tweet.hashtags || tweet.hashtags.length === 0) return null
+
+  return (
+    <div className="message-hashtags">
+      {tweet.hashtags.map((hashtag, index) => (
+        <span key={index} className="hashtag">
+          #{hashtag}
+        </span>
+      ))}
+    </div>
+  )
+}
+
+// Helper component to render media attachments
+function MessageMedia({
+  tweet,
+  onImageClick,
+}: {
+  tweet: Tweet
+  onImageClick: (media: TweetMedia[], index: number) => void
+}) {
+  if (!tweet.media || tweet.media.length === 0) return null
+
+  return (
+    <div className="message-media">
+      {tweet.media.map((media, index) => {
+        // Check if media URL exists and is not empty
+        const mediaUrl = media.thumbnailUrl || media.url
+        if (!mediaUrl || mediaUrl.trim() === '') return null
+
+        return (
+          <div key={index} className="media-item">
+            {media.type === 'photo' && (
+              <img
+                src={mediaUrl}
+                alt="Tweet media"
+                className="media-thumbnail"
+                onClick={() => onImageClick(tweet.media!, index)}
+                onLoad={(e) => {
+                  // Check if the loaded image is actually valid (not an error response)
+                  const img = e.currentTarget
+                  // Only show the image if it's reasonably sized (not an error XML response)
+                  if (img.naturalWidth >= 10 && img.naturalHeight >= 10) {
+                    img.style.display = 'block'
+                  } else {
+                    img.style.display = 'none'
+                  }
+                }}
+                onError={(e) => {
+                  // Hide the image if it fails to load
+                  e.currentTarget.style.display = 'none'
+                }}
+                style={{ cursor: 'pointer', display: 'none' }}
+              />
+            )}
+            {media.type === 'video' && (
+              <div className="video-placeholder" onClick={() => onImageClick(tweet.media!, index)}>
+                <span>🎥 Video</span>
+              </div>
+            )}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+// Image viewer modal component
+function MediaViewer({
+  media,
+  currentIndex,
+  isOpen,
+  onClose,
+  onNavigate,
+}: {
+  media: TweetMedia[] | null
+  currentIndex: number
+  isOpen: boolean
+  onClose: () => void
+  onNavigate: (index: number) => void
+}) {
+  if (!isOpen || !media || media.length === 0 || currentIndex >= media.length) return null
+
+  const currentMedia = media[currentIndex]
+  if (!currentMedia) return null
+
+  const hasMultiple = media.length > 1
+
+  const goToPrevious = () => {
+    const newIndex = currentIndex > 0 ? currentIndex - 1 : media.length - 1
+    onNavigate(newIndex)
+  }
+
+  const goToNext = () => {
+    const newIndex = currentIndex < media.length - 1 ? currentIndex + 1 : 0
+    onNavigate(newIndex)
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowLeft') {
+      goToPrevious()
+    } else if (e.key === 'ArrowRight') {
+      goToNext()
+    } else if (e.key === 'Escape') {
+      onClose()
+    }
+  }
+
+  return (
+    <div className="media-viewer-overlay" onClick={onClose} onKeyDown={handleKeyDown} tabIndex={0}>
+      <div className="media-viewer-content" onClick={(e) => e.stopPropagation()}>
+        <button type="button" className="media-viewer-close" onClick={onClose}>
+          ×
+        </button>
+
+        {hasMultiple && (
+          <>
+            <button
+              type="button"
+              className="media-viewer-nav media-viewer-prev"
+              onClick={goToPrevious}
+            >
+              ‹
+            </button>
+            <button type="button" className="media-viewer-nav media-viewer-next" onClick={goToNext}>
+              ›
+            </button>
+          </>
+        )}
+
+        {currentMedia.type === 'photo' && (
+          <img src={currentMedia.url} alt="Full size media" className="media-viewer-image" />
+        )}
+
+        {currentMedia.type === 'video' && (
+          <div className="media-viewer-video-placeholder">
+            <span>🎥 Video</span>
+            <p>This video cannot be displayed inline</p>
+            <a href={currentMedia.url} target="_blank" rel="noopener noreferrer">
+              Open in new tab
+            </a>
+          </div>
+        )}
+
+        {hasMultiple && (
+          <div className="media-viewer-counter">
+            {currentIndex + 1} / {media.length}
+          </div>
+        )}
+      </div>
+    </div>
+  )
 }
 
 export function MessagesPanel() {
@@ -46,6 +213,11 @@ export function MessagesPanel() {
 
   // Track which tweet should be highlighted (for marker clicks)
   const [highlightedTweetId, setHighlightedTweetId] = useState<string | null>(null)
+
+  // Image viewer state
+  const [viewerMedia, setViewerMedia] = useState<TweetMedia[] | null>(null)
+  const [viewerIndex, setViewerIndex] = useState(0)
+  const [isViewerOpen, setIsViewerOpen] = useState(false)
 
   // Determine if we're in single story view or list view
   const isStoryView = activeTweetId !== null
@@ -309,8 +481,17 @@ export function MessagesPanel() {
                 <span className="handle">@{storyToDisplay.headTweet.authorHandle}</span>
               </header>
               <MessageText tweet={storyToDisplay.headTweet} />
+              <MessageHashtags tweet={storyToDisplay.headTweet} />
+              <MessageMedia
+                tweet={storyToDisplay.headTweet}
+                onImageClick={(media, index) => {
+                  setViewerMedia(media)
+                  setViewerIndex(index)
+                  setIsViewerOpen(true)
+                }}
+              />
               <footer className="message-footer">
-                <time>{new Date(storyToDisplay.headTweet.createdAt).toLocaleDateString()}</time>
+                <time>{formatDateTime(storyToDisplay.headTweet.createdAt)}</time>
                 {storyToDisplay.headTweet.source && (
                   <span className="source-badge">{storyToDisplay.headTweet.source}</span>
                 )}
@@ -336,11 +517,18 @@ export function MessagesPanel() {
                   <span className="handle">@{storyTweet.authorHandle}</span>
                 </header>
                 <MessageText tweet={storyTweet} />
+                <MessageHashtags tweet={storyTweet} />
+                <MessageMedia
+                  tweet={storyTweet}
+                  onImageClick={(media, index) => {
+                    setViewerMedia(media)
+                    setViewerIndex(index)
+                    setIsViewerOpen(true)
+                  }}
+                />
                 <footer className="message-footer">
-                  <time>{new Date(storyTweet.createdAt).toLocaleDateString()}</time>
-                  {storyTweet.source && (
-                    <span className="source-badge">{storyTweet.source}</span>
-                  )}
+                  <time>{formatDateTime(storyTweet.createdAt)}</time>
+                  {storyTweet.source && <span className="source-badge">{storyTweet.source}</span>}
                 </footer>
               </article>
             ))}
@@ -376,11 +564,18 @@ export function MessagesPanel() {
                     <span className="handle">@{headTweet.authorHandle}</span>
                   </header>
                   <MessageText tweet={headTweet} truncate={false} />
+                  <MessageHashtags tweet={headTweet} />
+                  <MessageMedia
+                    tweet={headTweet}
+                    onImageClick={(media, index) => {
+                      setViewerMedia(media)
+                      setViewerIndex(index)
+                      setIsViewerOpen(true)
+                    }}
+                  />
                   <footer className="message-footer">
-                    <time>{new Date(headTweet.createdAt).toLocaleDateString()}</time>
-                    {headTweet.source && (
-                      <span className="source-badge">{headTweet.source}</span>
-                    )}
+                    <time>{formatDateTime(headTweet.createdAt)}</time>
+                    {headTweet.source && <span className="source-badge">{headTweet.source}</span>}
                   </footer>
                 </article>
 
@@ -403,8 +598,17 @@ export function MessagesPanel() {
                       <span className="handle">@{storyTweet.authorHandle}</span>
                     </header>
                     <MessageText tweet={storyTweet} truncate={false} />
+                    <MessageHashtags tweet={storyTweet} />
+                    <MessageMedia
+                      tweet={storyTweet}
+                      onImageClick={(media, index) => {
+                        setViewerMedia(media)
+                        setViewerIndex(index)
+                        setIsViewerOpen(true)
+                      }}
+                    />
                     <footer className="message-footer">
-                      <time>{new Date(storyTweet.createdAt).toLocaleDateString()}</time>
+                      <time>{formatDateTime(storyTweet.createdAt)}</time>
                       {storyTweet.source && (
                         <span className="source-badge">{storyTweet.source}</span>
                       )}
@@ -441,6 +645,19 @@ export function MessagesPanel() {
           </button>
         </div>
       )}
+
+      {/* Media Viewer */}
+      <MediaViewer
+        media={viewerMedia}
+        currentIndex={viewerIndex}
+        isOpen={isViewerOpen}
+        onClose={() => {
+          setIsViewerOpen(false)
+          setViewerMedia(null)
+          setViewerIndex(0)
+        }}
+        onNavigate={(index) => setViewerIndex(index)}
+      />
     </div>
   )
 }

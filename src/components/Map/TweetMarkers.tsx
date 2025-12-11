@@ -6,6 +6,17 @@ import { useUrlState } from '@/hooks/useUrlState'
 import { getTweetsOfStory, getHeadTweetById } from '@/utils/stories'
 import type { Tweet } from '@/types'
 
+// Helper function to format date as YYYY-MM-DD HH:MM
+function formatDateTime(dateString: string): string {
+  const date = new Date(dateString)
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  return `${year}-${month}-${day} ${hours}:${minutes}`
+}
+
 // Marker icons based on tweet type
 const MARKER_COLORS: Record<string, string> = {
   pollution: '#ef4444', // red
@@ -90,13 +101,15 @@ export function TweetMarkers() {
 
   // Create popup content for a tweet
   const createPopupContent = useCallback((tweet: Tweet): string => {
-    const avatarUrl = tweet.authorAvatar && tweet.authorAvatar !== ''
-      ? tweet.authorAvatar
-      : '/static/avatar_icon.png'
+    const avatarUrl =
+      tweet.authorAvatar && tweet.authorAvatar !== ''
+        ? tweet.authorAvatar
+        : '/static/avatar_icon.png'
 
-    const hashtagsHtml = tweet.hashtags && tweet.hashtags.length > 0
-      ? `<div class="tweet-hashtags">${tweet.hashtags.map(tag => `<span class="hashtag">#${tag}</span>`).join('')}</div>`
-      : ''
+    const hashtagsHtml =
+      tweet.hashtags && tweet.hashtags.length > 0
+        ? `<div class="tweet-hashtags">${tweet.hashtags.map((tag) => `<span class="hashtag">#${tag}</span>`).join('')}</div>`
+        : ''
 
     return `
       <div class="tweet-popup">
@@ -114,7 +127,7 @@ export function TweetMarkers() {
         </div>
         ${hashtagsHtml}
         <div class="tweet-popup-footer">
-          <time>${new Date(tweet.createdAt).toLocaleDateString()}</time>
+          <time>${formatDateTime(tweet.createdAt)}</time>
           ${tweet.source ? `<span class="tweet-source">${tweet.source}</span>` : ''}
         </div>
         <button class="tweet-activate-btn" data-tweet-id="${tweet.id}">View Details</button>
@@ -242,7 +255,14 @@ export function TweetMarkers() {
         currentMarkers.set(tweet.id, marker)
       }
     }
-  }, [map, tweetsToShow, isTweetsVisible, createPopupContent, handleMarkerClick, handleTweetActivation])
+  }, [
+    map,
+    tweetsToShow,
+    isTweetsVisible,
+    createPopupContent,
+    handleMarkerClick,
+    handleTweetActivation,
+  ])
 
   // Update visible tweets when map moves
   useEffect(() => {
