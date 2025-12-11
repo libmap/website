@@ -2,10 +2,11 @@ import { useEffect, useRef, useCallback } from 'react'
 import maplibregl from 'maplibre-gl'
 import { useStore } from '@/store'
 import { BASE_TILES, OVERLAY_LAYERS, POINT_LAYERS, getFuelColor } from '@/lib/layers'
-import { getStyleForBaseLayer } from '@/lib/layers/maplibreStyles'
-import type { OverlayConfig, PointLayerConfig } from '@/lib/layers'
+import type { OverlayConfig, PointLayerConfig, BaseTileConfig } from '@/lib/layers'
 
 const DATA_BASE_URL = 'https://raw.githubusercontent.com/decarbnow/data/refs/heads/master/layers'
+const BASE_SOURCE_ID = 'base-tiles'
+const BASE_LAYER_ID = 'base-layer'
 
 export function LayerManager() {
   const map = useStore((state) => state.map.instance)
@@ -17,104 +18,175 @@ export function LayerManager() {
   const popupRef = useRef<maplibregl.Popup | null>(null)
 
   // Detect current base layer from visibleLayers
-  const currentBaseLayer = visibleLayers.find((id) => BASE_TILES.some((t) => t.id === id)) ?? 'satellite'
+  const currentBaseLayer =
+    visibleLayers.find((id) => BASE_TILES.some((t) => t.id === id)) ?? 'satellite'
 
-  // Handle base layer changes
-  useEffect(() => {
-    if (!map) return
-
-    // Initialize prevBaseLayerRef on first run (map already has initial style from useMap)
-    if (prevBaseLayerRef.current === null) {
-      prevBaseLayerRef.current = currentBaseLayer
-      return
+  // Get tiles array for a base tile config (handles subdomains)
+  const getTilesForConfig = useCallback((config: BaseTileConfig): string[] => {
+    if (!config.url || config.id === 'empty') {
+      return []
     }
 
-    // Skip if base layer hasn't changed
-    if (currentBaseLayer === prevBaseLayerRef.current) return
+    let tiles: string[]
+    if (config.subdomains && config.subdomains.length > 0) {
+      tiles = config.subdomains.map((s: string) => config.url.replace('{s}', s))
+    } else {
+      tiles = [config.url.replace('{s}', '')]
+    }
 
-    // Set new base style - this will remove all layers
-    map.setStyle(getStyleForBaseLayer(currentBaseLayer))
+    // Handle TMS y-coordinate inversion
+    tiles = tiles.map((url) => url.replace('{-y}', '{y}'))
 
-    // Re-add overlays after style loads
-    map.once('style.load', () => {
-      loadedLayersRef.current.clear()
-      // Overlays will be re-added by the visibleLayers effect
-    })
+    return tiles
+  }, [])
 
-    prevBaseLayerRef.current = currentBaseLayer
-  }, [map, currentBaseLayer])
+  // Track current base layer scheme to detect when we need to recreate the source
+  const currentSchemeRef = useRef<'tms' | 'xyz'>('xyz')
 
-  // Add an overlay tile layer
-  const addOverlayTileLayer = useCallback(
-    (config: OverlayConfig) => {
-      if (!map || !config.url || loadedLayersRef.current.has(config.id)) return
-      if (map.getSource(config.id)) return
+  // Update base layer source tiles (MapLibre standard approach - no setStyle)
+  const updateBaseLayer = useCallback(
+    (layerId: string) => {
+      if (!map) return
 
-      map.addSource(config.id, {
-        type: 'raster',
-        tiles: [config.url],
-        tileSize: 256,
-        maxzoom: config.maxNativeZoom ?? config.maxZoom ?? 22,
-        minzoom: config.minZoom ?? 0,
-        scheme: config.tms ? 'tms' : 'xyz',
-      })
+      const config = BASE_TILES.find((t) => t.id === layerId)
+      if (!config) return
 
-      map.addLayer({
-        id: config.id,
-        type: 'raster',
-        source: config.id,
-        paint: {
-          'raster-opacity': config.opacity ?? 0.8,
-        },
-      })
+      const source = map.getSource(BASE_SOURCE_ID) as maplibregl.RasterTileSource | undefined
+      const newScheme = config.tms ? 'tms' : 'xyz'
 
-      loadedLayersRef.current.add(config.id)
-    },
-    [map]
-  )
-
-  // Add GeoJSON overlay layer (for NO2 data)
-  const addGeoJSONOverlay = useCallback(
-    async (config: OverlayConfig) => {
-      if (!map || !config.url || loadedLayersRef.current.has(config.id)) return
-      if (map.getSource(config.id) || loadingRef.current.has(config.id)) return
-
-      loadingRef.current.add(config.id)
-
-      try {
-        const url = config.url.startsWith('http') ? config.url : `${DATA_BASE_URL}${config.url}`
-        const response = await fetch(url)
-        if (!response.ok) throw new Error(`Failed to load ${config.url}`)
-
-        const data = await response.json()
-
-        if (!map.getSource(config.id)) {
-          map.addSource(config.id, {
-            type: 'geojson',
-            data,
-          })
-
-          map.addLayer({
-            id: config.id,
-            type: 'fill',
-            source: config.id,
-            paint: {
-              'fill-color': config.style?.fillColor ?? '#FF0000',
-              'fill-opacity': config.style?.fillOpacity ?? 0.05,
-              'fill-outline-color': config.style?.color ?? '#F1EFE8',
-            },
-          })
-
-          loadedLayersRef.current.add(config.id)
+      if (config.id === 'empty' || !config.url) {
+        // Hide base layer for empty/disabled
+        if (map.getLayer(BASE_LAYER_ID)) {
+          map.setLayoutProperty(BASE_LAYER_ID, 'visibility', 'none')
         }
-      } catch (error) {
-        console.error(`Error loading overlay ${config.id}:`, error)
-      } finally {
-        loadingRef.current.delete(config.id)
+        return
+      }
+
+      const tiles = getTilesForConfig(config)
+
+      // Check if scheme changed - if so, we need to recreate the source
+      // because MapLibre doesn't allow changing the scheme of an existing source
+      const schemeChanged = source && currentSchemeRef.current !== newScheme
+
+      if (source && !schemeChanged) {
+        // Update existing source with new tiles (scheme is the same)
+        source.setTiles(tiles)
+
+        // Ensure base layer is visible
+        if (map.getLayer(BASE_LAYER_ID)) {
+          map.setLayoutProperty(BASE_LAYER_ID, 'visibility', 'visible')
+          map.setPaintProperty(BASE_LAYER_ID, 'raster-opacity', config.opacity ?? 1)
+        }
+      } else {
+        // Need to recreate source (either doesn't exist or scheme changed)
+        if (source) {
+          // Remove existing layer and source
+          if (map.getLayer(BASE_LAYER_ID)) {
+            map.removeLayer(BASE_LAYER_ID)
+          }
+          map.removeSource(BASE_SOURCE_ID)
+        }
+
+        // Add new source with correct scheme
+        map.addSource(BASE_SOURCE_ID, {
+          type: 'raster',
+          tiles,
+          tileSize: 256,
+          maxzoom: config.maxNativeZoom ?? config.maxZoom ?? 20,
+          scheme: newScheme,
+        })
+
+        // Add base layer at the bottom (before all other layers)
+        const firstLayerId = map.getStyle().layers?.[0]?.id
+        map.addLayer(
+          {
+            id: BASE_LAYER_ID,
+            type: 'raster',
+            source: BASE_SOURCE_ID,
+            paint: {
+              'raster-opacity': config.opacity ?? 1,
+            },
+          },
+          firstLayerId
+        )
+
+        currentSchemeRef.current = newScheme
       }
     },
-    [map]
+    [map, getTilesForConfig]
   )
+
+  // Add an overlay tile layer
+  const addOverlayTileLayer = useCallback((config: OverlayConfig) => {
+    const mapInstance = useStore.getState().map.instance
+    if (!mapInstance || !config.url || loadedLayersRef.current.has(config.id)) return
+    if (mapInstance.getSource(config.id)) return
+
+    console.log('[LayerManager] addOverlayTileLayer executing for:', config.id)
+
+    mapInstance.addSource(config.id, {
+      type: 'raster',
+      tiles: [config.url],
+      tileSize: 256,
+      maxzoom: config.maxNativeZoom ?? config.maxZoom ?? 22,
+      minzoom: config.minZoom ?? 0,
+      scheme: config.tms ? 'tms' : 'xyz',
+    })
+
+    mapInstance.addLayer({
+      id: config.id,
+      type: 'raster',
+      source: config.id,
+      paint: {
+        'raster-opacity': config.opacity ?? 0.8,
+      },
+    })
+
+    loadedLayersRef.current.add(config.id)
+  }, [])
+
+  // Add GeoJSON overlay layer (for NO2 data)
+  const addGeoJSONOverlay = useCallback(async (config: OverlayConfig) => {
+    const mapInstance = useStore.getState().map.instance
+    if (!mapInstance || !config.url || loadedLayersRef.current.has(config.id)) return
+    if (mapInstance.getSource(config.id) || loadingRef.current.has(config.id)) return
+
+    loadingRef.current.add(config.id)
+
+    try {
+      const url = config.url.startsWith('http') ? config.url : `${DATA_BASE_URL}${config.url}`
+      const response = await fetch(url)
+      if (!response.ok) throw new Error(`Failed to load ${config.url}`)
+
+      const data = await response.json()
+
+      // Re-check map instance as this is async
+      const currentMap = useStore.getState().map.instance
+      if (currentMap && !currentMap.getSource(config.id)) {
+        currentMap.addSource(config.id, {
+          type: 'geojson',
+          data,
+        })
+
+        currentMap.addLayer({
+          id: config.id,
+          type: 'fill',
+          source: config.id,
+          paint: {
+            'fill-color': config.style?.fillColor ?? '#FF0000',
+            'fill-opacity': config.style?.fillOpacity ?? 0.05,
+            'fill-outline-color': config.style?.color ?? '#F1EFE8',
+          },
+        })
+
+        loadedLayersRef.current.add(config.id)
+      }
+    } catch (error) {
+      console.error(`Error loading overlay ${config.id}:`, error)
+    } finally {
+      loadingRef.current.delete(config.id)
+    }
+  }, [])
 
   // Build popup content for point features
   const buildPopupContent = useCallback(
@@ -170,32 +242,36 @@ export function LayerManager() {
   )
 
   // Get circle color expression for a layer
-  const getCircleColor = useCallback((config: PointLayerConfig): maplibregl.ExpressionSpecification | string => {
-    if (config.id === 'energy' || config.id === 'power-plants') {
-      return [
-        'match',
-        ['get', 'primary_fuel'],
-        'Oil',
-        getFuelColor('Oil'),
-        'Coal',
-        getFuelColor('Coal'),
-        'Gas',
-        getFuelColor('Gas'),
-        'Gas/Oil',
-        getFuelColor('Gas/Oil'),
-        'Biomass',
-        getFuelColor('Biomass'),
-        config.color, // default
-      ] as maplibregl.ExpressionSpecification
-    }
-    return config.color
-  }, [])
+  const getCircleColor = useCallback(
+    (config: PointLayerConfig): maplibregl.ExpressionSpecification | string => {
+      if (config.id === 'energy' || config.id === 'power-plants') {
+        return [
+          'match',
+          ['get', 'primary_fuel'],
+          'Oil',
+          getFuelColor('Oil'),
+          'Coal',
+          getFuelColor('Coal'),
+          'Gas',
+          getFuelColor('Gas'),
+          'Gas/Oil',
+          getFuelColor('Gas/Oil'),
+          'Biomass',
+          getFuelColor('Biomass'),
+          config.color, // default
+        ] as maplibregl.ExpressionSpecification
+      }
+      return config.color
+    },
+    []
+  )
 
   // Add a GeoJSON point layer
   const addPointLayer = useCallback(
     async (config: PointLayerConfig) => {
-      if (!map || loadedLayersRef.current.has(config.id)) return
-      if (map.getSource(config.id) || loadingRef.current.has(config.id)) return
+      const mapInstance = useStore.getState().map.instance
+      if (!mapInstance || loadedLayersRef.current.has(config.id)) return
+      if (mapInstance.getSource(config.id) || loadingRef.current.has(config.id)) return
 
       loadingRef.current.add(config.id)
 
@@ -207,14 +283,16 @@ export function LayerManager() {
 
         const data = await response.json()
 
-        if (!map.getSource(config.id)) {
-          map.addSource(config.id, {
+        // Re-check map instance as this is async
+        const currentMap = useStore.getState().map.instance
+        if (currentMap && !currentMap.getSource(config.id)) {
+          currentMap.addSource(config.id, {
             type: 'geojson',
             data,
           })
 
           // Add circle layer with zoom-based radius scaling
-          map.addLayer({
+          currentMap.addLayer({
             id: config.id,
             type: 'circle',
             source: config.id,
@@ -249,7 +327,7 @@ export function LayerManager() {
           })
 
           // Add click handler for popups
-          map.on('click', config.id, (e) => {
+          currentMap.on('click', config.id, (e) => {
             if (!e.features || e.features.length === 0) return
 
             const feature = e.features[0]
@@ -266,16 +344,16 @@ export function LayerManager() {
             popupRef.current = new maplibregl.Popup({ maxWidth: '350px' })
               .setLngLat(coords as [number, number])
               .setHTML(buildPopupContent(props, coords))
-              .addTo(map)
+              .addTo(currentMap)
           })
 
           // Change cursor on hover
-          map.on('mouseenter', config.id, () => {
-            map.getCanvas().style.cursor = 'pointer'
+          currentMap.on('mouseenter', config.id, () => {
+            currentMap.getCanvas().style.cursor = 'pointer'
           })
 
-          map.on('mouseleave', config.id, () => {
-            map.getCanvas().style.cursor = ''
+          currentMap.on('mouseleave', config.id, () => {
+            currentMap.getCanvas().style.cursor = ''
           })
 
           loadedLayersRef.current.add(config.id)
@@ -286,83 +364,130 @@ export function LayerManager() {
         loadingRef.current.delete(config.id)
       }
     },
-    [map, getCircleColor, buildPopupContent]
+    [getCircleColor, buildPopupContent]
   )
 
   // Remove a layer
-  const removeLayer = useCallback(
-    (layerId: string) => {
-      if (!map) return
+  const removeLayer = useCallback((layerId: string) => {
+    const mapInstance = useStore.getState().map.instance
+    if (!mapInstance) return
 
-      // Remove event listeners
-      try {
-        map.off('click', layerId, () => {})
-        map.off('mouseenter', layerId, () => {})
-        map.off('mouseleave', layerId, () => {})
-      } catch {
-        // Ignore errors if handlers don't exist
-      }
+    // Remove event listeners
+    try {
+      mapInstance.off('click', layerId, () => {})
+      mapInstance.off('mouseenter', layerId, () => {})
+      mapInstance.off('mouseleave', layerId, () => {})
+    } catch {
+      // Ignore errors if handlers don't exist
+    }
 
-      if (map.getLayer(layerId)) {
-        map.removeLayer(layerId)
-      }
-      if (map.getSource(layerId)) {
-        map.removeSource(layerId)
-      }
+    if (mapInstance.getLayer(layerId)) {
+      mapInstance.removeLayer(layerId)
+    }
+    if (mapInstance.getSource(layerId)) {
+      mapInstance.removeSource(layerId)
+    }
 
-      loadedLayersRef.current.delete(layerId)
-    },
-    [map]
-  )
+    loadedLayersRef.current.delete(layerId)
+  }, [])
 
-  // Main effect to manage layers
+  // Handle base layer changes - update tiles without replacing the entire style
   useEffect(() => {
     if (!map) return
 
-    // Wait for style to be loaded
-    const handleStyleLoad = () => {
-      const currentLayers = new Set(visibleLayers)
+    // Skip if base layer hasn't changed
+    if (currentBaseLayer === prevBaseLayerRef.current) return
 
-      // Remove layers that should not be visible
-      for (const layerId of loadedLayersRef.current) {
-        // Skip base layers - they're handled separately
-        if (BASE_TILES.find((t) => t.id === layerId)) continue
+    // Update base layer tiles (doesn't affect other layers)
+    updateBaseLayer(currentBaseLayer)
 
-        if (!currentLayers.has(layerId)) {
-          removeLayer(layerId)
+    prevBaseLayerRef.current = currentBaseLayer
+  }, [map, currentBaseLayer, updateBaseLayer])
+
+  // Sync visible layers to map - this is the main layer management logic
+  const syncLayers = useCallback(() => {
+    const mapInstance = useStore.getState().map.instance
+    if (!mapInstance || !mapInstance.isStyleLoaded()) {
+      console.log('[LayerManager] syncLayers skipped - map not ready', {
+        map: !!mapInstance,
+        styleLoaded: mapInstance?.isStyleLoaded(),
+      })
+      return
+    }
+
+    console.log('[LayerManager] syncLayers running with visibleLayers:', visibleLayers)
+
+    const currentLayers = new Set(visibleLayers)
+
+    // Remove layers that should not be visible
+    for (const layerId of loadedLayersRef.current) {
+      // Skip base layer - handled separately
+      if (layerId === BASE_LAYER_ID) continue
+      if (BASE_TILES.find((t) => t.id === layerId)) continue
+
+      if (!currentLayers.has(layerId)) {
+        removeLayer(layerId)
+      }
+    }
+
+    // Add layers that should be visible
+    for (const layerId of visibleLayers) {
+      // Skip base tiles - handled by updateBaseLayer
+      if (BASE_TILES.find((t) => t.id === layerId)) continue
+
+      // Skip 'tweets' - handled by TweetMarkers component
+      if (layerId === 'tweets') continue
+
+      // Check overlay tiles
+      const overlay = OVERLAY_LAYERS.find((o) => o.id === layerId)
+      if (overlay) {
+        console.log('[LayerManager] adding overlay:', layerId, overlay.type)
+        if (overlay.type === 'tile') {
+          addOverlayTileLayer(overlay)
+        } else if (overlay.type === 'geojson') {
+          addGeoJSONOverlay(overlay)
         }
+        continue
       }
 
-      // Add layers that should be visible
-      for (const layerId of visibleLayers) {
-        // Skip base tiles - handled by setStyle
-        if (BASE_TILES.find((t) => t.id === layerId)) continue
-
-        // Check overlay tiles
-        const overlay = OVERLAY_LAYERS.find((o) => o.id === layerId)
-        if (overlay) {
-          if (overlay.type === 'tile') {
-            addOverlayTileLayer(overlay)
-          } else if (overlay.type === 'geojson') {
-            addGeoJSONOverlay(overlay)
-          }
-          continue
-        }
-
-        // Check point layers
-        const pointLayer = POINT_LAYERS.find((p) => p.id === layerId)
-        if (pointLayer) {
-          addPointLayer(pointLayer)
-        }
+      // Check point layers
+      const pointLayer = POINT_LAYERS.find((p) => p.id === layerId)
+      if (pointLayer) {
+        console.log('[LayerManager] adding point layer:', layerId)
+        addPointLayer(pointLayer)
       }
+    }
+  }, [visibleLayers, addOverlayTileLayer, addGeoJSONOverlay, addPointLayer, removeLayer])
+
+  // Effect to manage overlay layers
+  useEffect(() => {
+    console.log('[LayerManager] overlay effect running', { map: !!map, visibleLayers })
+
+    if (!map) return
+
+    // The map.isStyleLoaded() can return false even after the 'load' event
+    // if the style is still being processed. We need to handle both cases:
+    // 1. Style is already loaded -> sync immediately
+    // 2. Style is loading -> wait for 'idle' event which fires when map is ready
+
+    const doSync = () => {
+      console.log('[LayerManager] doSync called, isStyleLoaded:', map.isStyleLoaded())
+      syncLayers()
     }
 
     if (map.isStyleLoaded()) {
-      handleStyleLoad()
+      console.log('[LayerManager] style already loaded, calling syncLayers')
+      doSync()
     } else {
-      map.once('style.load', handleStyleLoad)
+      console.log('[LayerManager] style not loaded, waiting for idle event')
+      // Use 'idle' event which fires when the map is fully rendered and ready
+      // This is more reliable than 'style.load' which may have already fired
+      map.once('idle', doSync)
+      return () => {
+        map.off('idle', doSync)
+      }
     }
-  }, [map, visibleLayers, addOverlayTileLayer, addGeoJSONOverlay, addPointLayer, removeLayer])
+  }, [map, syncLayers])
 
   // Cleanup on unmount
   useEffect(() => {

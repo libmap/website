@@ -31,7 +31,7 @@ export function MapContainer() {
     }
   }, []) // Empty deps - only run once
 
-  // Sync URL on map changes (separate effect)
+  // Sync URL on map move/zoom
   useEffect(() => {
     if (!mapInstance) return
 
@@ -44,6 +44,13 @@ export function MapContainer() {
       mapInstance.off('moveend', handleMoveEnd)
     }
   }, [mapInstance, syncToUrl])
+
+  // Sync URL when layers change
+  const visibleLayers = useStore((state) => state.layers.visible)
+  useEffect(() => {
+    if (!mapInstance) return
+    syncToUrl()
+  }, [mapInstance, visibleLayers, syncToUrl])
 
   return (
     <div className="map-wrapper">

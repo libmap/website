@@ -16,7 +16,8 @@ export const BASE_TILES: BaseTileConfig[] = [
     id: 'esri',
     name: 'Esri Satellite',
     url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-    attribution: '© <a href="https://www.esri.com/">Esri</a>, USGS, NASA, ESA, GE, Getmapping, Community',
+    attribution:
+      '© <a href="https://www.esri.com/">Esri</a>, USGS, NASA, ESA, GE, Getmapping, Community',
     maxZoom: 20,
   },
   {
@@ -28,6 +29,7 @@ export const BASE_TILES: BaseTileConfig[] = [
       '<a href="https://disc.gsfc.nasa.gov/datasets/OMNO2d_003/summary?keywords=omi">NASA</a>, ' +
       '<a href="https://earth.esa.int/web/guest/missions/esa-eo-missions/sentinel-5p">ESA/Copernicus</a>',
     maxZoom: 20,
+    subdomains: ['a', 'b', 'c'],
   },
   {
     id: 'light',
@@ -67,10 +69,11 @@ export const BASE_TILES: BaseTileConfig[] = [
   {
     id: 'nimbo',
     name: 'Nimbo',
-    url: 'https://prod-data.nimbo.earth/mapcache-free/tms/1.0.0/latest@kermap/{z}/{x}/{-y}.png',
+    url: 'https://prod-data.nimbo.earth/mapcache-free/tms/1.0.0/latest@kermap/{z}/{x}/{y}.png',
     attribution: 'Tiles © <a href="https://nimbo.earth/">Nimbo by Kermap</a>',
     maxZoom: 16,
     maxNativeZoom: 16,
+    tms: true,
   },
   {
     id: 's2maps16',

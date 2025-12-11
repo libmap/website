@@ -2,39 +2,56 @@ import type { StyleSpecification } from 'maplibre-gl'
 import { BASE_TILES } from './baseTiles'
 import type { BaseTileConfig } from './types'
 
-export function createRasterStyle(config: BaseTileConfig): StyleSpecification {
+const BASE_SOURCE_ID = 'base-tiles'
+const BASE_LAYER_ID = 'base-layer'
+
+// Get tiles array for a base tile config (handles subdomains and TMS)
+export function getTilesForConfig(config: BaseTileConfig): string[] {
   if (!config.url || config.id === 'empty') {
-    return {
-      version: 8,
-      sources: {},
-      layers: [
-        {
-          id: 'background',
-          type: 'background',
-          paint: { 'background-color': '#f0f0f0' },
-        },
-      ],
-    }
+    return []
   }
 
-  // Convert Leaflet URL template to MapLibre tiles array
-  // Leaflet uses {s} for subdomains, MapLibre needs expanded URLs
   let tiles: string[]
-
   if (config.subdomains && config.subdomains.length > 0) {
     tiles = config.subdomains.map((s: string) => config.url.replace('{s}', s))
   } else {
-    // Remove {s} placeholder if no subdomains defined
     tiles = [config.url.replace('{s}', '')]
   }
 
   // Handle TMS y-coordinate inversion (Nimbo uses {-y})
   tiles = tiles.map((url) => url.replace('{-y}', '{y}'))
 
+  return tiles
+}
+
+// Create an empty base style - layers will be added dynamically by LayerManager
+export function createEmptyStyle(): StyleSpecification {
+  return {
+    version: 8,
+    sources: {},
+    layers: [
+      {
+        id: 'background',
+        type: 'background',
+        paint: { 'background-color': '#e0e0e0' },
+      },
+    ],
+  }
+}
+
+// Create initial style with a base layer already included
+// This is used for initial map load to avoid a flash of empty map
+export function createRasterStyle(config: BaseTileConfig): StyleSpecification {
+  if (!config.url || config.id === 'empty') {
+    return createEmptyStyle()
+  }
+
+  const tiles = getTilesForConfig(config)
+
   return {
     version: 8,
     sources: {
-      'base-tiles': {
+      [BASE_SOURCE_ID]: {
         type: 'raster',
         tiles,
         tileSize: 256,
@@ -45,9 +62,9 @@ export function createRasterStyle(config: BaseTileConfig): StyleSpecification {
     },
     layers: [
       {
-        id: 'base-layer',
+        id: BASE_LAYER_ID,
         type: 'raster',
-        source: 'base-tiles',
+        source: BASE_SOURCE_ID,
         paint: {
           'raster-opacity': config.opacity ?? 1,
         },
