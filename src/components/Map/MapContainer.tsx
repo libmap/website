@@ -47,7 +47,9 @@ export function MapContainer() {
 
   return (
     <div className="map-wrapper">
-      <div ref={containerRef} id="map" className="map-container" />
+      <div ref={containerRef} id="map" className="map-container">
+        <img src="/static/crosshair.png" alt="Crosshair" className="crosshair" />
+      </div>
       {mapInstance && (
         <>
           <MapControls />
