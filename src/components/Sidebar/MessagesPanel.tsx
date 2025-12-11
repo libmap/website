@@ -16,6 +16,32 @@ function formatDateTime(dateString: string): string {
   return `${year}-${month}-${day} ${hours}:${minutes}`
 }
 
+// Helper function to get display text for source
+function getSourceDisplayText(source?: string): string {
+  if (!source) return ''
+
+  switch (source.toLowerCase()) {
+    case 'twitter':
+    case 'x':
+      return '𝕏/Twitter'
+    case 'mastodon.social':
+      return 'Mastodon'
+    case 'bluesky':
+      return 'Bluesky'
+    default:
+      return source
+  }
+}
+
+// Helper function to get CSS class for source badge
+function getSourceBadgeClass(source?: string): string {
+  if (!source) return 'source-badge'
+
+  // Convert source to CSS-safe class name by replacing dots and slashes
+  const safeSource = source.replace(/[.\s/]/g, '-').toLowerCase()
+  return `source-badge source-${safeSource}`
+}
+
 // Helper component to render message text (handles HTML for Mastodon)
 function MessageText({ tweet, truncate = false }: { tweet: Tweet; truncate?: boolean }) {
   const isMastodon = tweet.source === 'mastodon.social'
@@ -493,7 +519,9 @@ export function MessagesPanel() {
               <footer className="message-footer">
                 <time>{formatDateTime(storyToDisplay.headTweet.createdAt)}</time>
                 {storyToDisplay.headTweet.source && (
-                  <span className="source-badge">{storyToDisplay.headTweet.source}</span>
+                  <span className={getSourceBadgeClass(storyToDisplay.headTweet.source)}>
+                    {getSourceDisplayText(storyToDisplay.headTweet.source)}
+                  </span>
                 )}
               </footer>
             </article>
@@ -528,7 +556,11 @@ export function MessagesPanel() {
                 />
                 <footer className="message-footer">
                   <time>{formatDateTime(storyTweet.createdAt)}</time>
-                  {storyTweet.source && <span className="source-badge">{storyTweet.source}</span>}
+                  {storyTweet.source && (
+                    <span className={getSourceBadgeClass(storyTweet.source)}>
+                      {getSourceDisplayText(storyTweet.source)}
+                    </span>
+                  )}
                 </footer>
               </article>
             ))}
@@ -575,7 +607,11 @@ export function MessagesPanel() {
                   />
                   <footer className="message-footer">
                     <time>{formatDateTime(headTweet.createdAt)}</time>
-                    {headTweet.source && <span className="source-badge">{headTweet.source}</span>}
+                    {headTweet.source && (
+                      <span className={getSourceBadgeClass(headTweet.source)}>
+                        {getSourceDisplayText(headTweet.source)}
+                      </span>
+                    )}
                   </footer>
                 </article>
 
@@ -610,7 +646,9 @@ export function MessagesPanel() {
                     <footer className="message-footer">
                       <time>{formatDateTime(storyTweet.createdAt)}</time>
                       {storyTweet.source && (
-                        <span className="source-badge">{storyTweet.source}</span>
+                        <span className={getSourceBadgeClass(storyTweet.source)}>
+                          {getSourceDisplayText(storyTweet.source)}
+                        </span>
                       )}
                     </footer>
                   </article>

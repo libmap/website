@@ -1,0 +1,28 @@
+// Reset and base styles
+@import 'reset-css/reset.css';
+
+// Global box-sizing and reset
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+// Base layout
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--color-text);
+  background: var(--color-background);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}

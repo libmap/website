@@ -1,0 +1,369 @@
+// Messages panel
+.messages-panel {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background-color: skyblue;
+}
+
+.back-button {
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-background);
+  color: var(--color-text);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: var(--color-surface);
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+  }
+}
+
+.messages-count {
+  font-size: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  gap: 12px;
+  color: var(--color-text-muted);
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border);
+}
+
+.pagination-btn {
+  padding: 6px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-background);
+  color: var(--color-text);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover:not(:disabled) {
+    background: var(--color-surface);
+    border-color: var(--color-primary);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.pagination-info {
+  font-size: 12px;
+  //color: var(--color-text-muted);
+}
+
+.filters-section {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: var(--color-primary);
+  color: white;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+
+  button {
+    background: none;
+    border: none;
+    color: inherit;
+    cursor: pointer;
+    padding: 0;
+    font-size: 14px;
+    line-height: 1;
+  }
+}
+
+.messages-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 32px 16px;
+  color: var(--color-text-muted);
+
+  .hint {
+    font-size: 12px;
+    margin-top: 8px;
+  }
+}
+
+.message-card {
+  padding: 12px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  //cborder-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    border-color: var(--color-primary);
+    box-shadow: var(--shadow-sm);
+  }
+
+  &.active {
+    border-color: var(--color-primary);
+    //background: rgba(59, 130, 246, 0.05);
+  }
+
+  // Story head tweets (default styling)
+  &.story-head {
+    // Uses base styling
+  }
+
+  // Story tweets (indented replies)
+  &.story-indent {
+    margin-left: 0;
+    margin-top: 0;
+    border-left: 15px solid var(--color-border);
+    padding-left: 12px;
+
+    .message-header {
+      .author {
+        font-size: 0.9em;
+      }
+
+      .handle {
+        font-size: 11px;
+      }
+    }
+
+    .message-text {
+      font-size: 12px;
+    }
+  }
+
+  // Blink animation for marker clicks
+  &.highlight-blink {
+    animation: highlight-blink 1.5s ease-in-out;
+  }
+}
+
+@keyframes highlight-blink {
+  0% {
+    background-color: var(--color-surface);
+  }
+  25% {
+    background-color: rgba(59, 130, 246, 0.2);
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+  }
+  50% {
+    background-color: rgba(59, 130, 246, 0.15);
+  }
+  75% {
+    background-color: rgba(59, 130, 246, 0.2);
+  }
+  100% {
+    background-color: var(--color-surface);
+    box-shadow: none;
+  }
+}
+
+.story-container {
+  margin-bottom: 16px;
+}
+
+.message-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+
+  .author {
+    font-weight: 600;
+  }
+
+  .handle {
+    color: var(--color-text-muted);
+    font-size: 12px;
+  }
+}
+
+.message-text {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+
+  // Styling for Mastodon HTML content
+  p {
+    margin: 0;
+    display: inline;
+  }
+
+  a {
+    color: var(--color-primary);
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  // Hide invisible spans (used for URL ellipsis in Mastodon)
+  .invisible {
+    display: none;
+  }
+
+  .ellipsis::after {
+    content: '…';
+  }
+}
+
+.message-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.type-badge {
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+
+  &.pollution {
+    background: #fecaca;
+    color: #b91c1c;
+  }
+
+  &.climateaction {
+    background: #bbf7d0;
+    color: #15803d;
+  }
+
+  &.transition {
+    background: #bfdbfe;
+    color: #1d4ed8;
+  }
+}
+
+.source-badge {
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  font-size: 10px;
+  font-weight: 600;
+
+  // Default styling
+  background: #e0e7ff;
+  color: #4338ca;
+
+  // Twitter/X sources
+  &.source-twitter,
+  &.source-x {
+    background: #1da1f2;
+    color: white;
+  }
+
+  // Mastodon sources
+  &.source-mastodon-social {
+    background: #563acc;
+    color: white;
+  }
+
+  // Bluesky sources
+  &.source-bluesky {
+    background: #0085ff;
+    color: white;
+  }
+}
+
+// Message hashtags styles
+.message-hashtags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+  margin-bottom: 6px;
+
+  .hashtag {
+    font-size: 11px;
+    padding: 2px 6px;
+    background: var(--color-surface);
+    border-radius: var(--radius-sm);
+    color: var(--color-primary);
+    font-weight: 500;
+  }
+}
+
+// Message media styles
+.message-media {
+  margin-top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.media-item {
+  flex-shrink: 0;
+}
+
+.media-thumbnail {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  transition: all 0.2s ease;
+
+  &:hover {
+    border-color: var(--color-primary);
+    box-shadow: var(--shadow-sm);
+  }
+}
+
+.video-placeholder {
+  width: 80px;
+  height: 80px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    border-color: var(--color-primary);
+    background: rgba(59, 130, 246, 0.05);
+  }
+}

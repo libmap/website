@@ -17,6 +17,32 @@ function formatDateTime(dateString: string): string {
   return `${year}-${month}-${day} ${hours}:${minutes}`
 }
 
+// Helper function to get display text for source
+function getSourceDisplayText(source?: string): string {
+  if (!source) return ''
+
+  switch (source.toLowerCase()) {
+    case 'twitter':
+    case 'x':
+      return '𝕏/Twitter'
+    case 'mastodon.social':
+      return 'Mastodon'
+    case 'bluesky':
+      return 'Bluesky'
+    default:
+      return source
+  }
+}
+
+// Helper function to get CSS class for source badge
+function getSourceBadgeClass(source?: string): string {
+  if (!source) return 'tweet-source'
+
+  // Convert source to CSS-safe class name by replacing dots and slashes
+  const safeSource = source.replace(/[.\s/]/g, '-').toLowerCase()
+  return `tweet-source source-${safeSource}`
+}
+
 // Marker icons based on tweet type
 const MARKER_COLORS: Record<string, string> = {
   pollution: '#ef4444', // red
@@ -128,7 +154,7 @@ export function TweetMarkers() {
         ${hashtagsHtml}
         <div class="tweet-popup-footer">
           <time>${formatDateTime(tweet.createdAt)}</time>
-          ${tweet.source ? `<span class="tweet-source">${tweet.source}</span>` : ''}
+          ${tweet.source ? `<span class="${getSourceBadgeClass(tweet.source)}">${getSourceDisplayText(tweet.source)}</span>` : ''}
         </div>
         <button class="tweet-activate-btn" data-tweet-id="${tweet.id}">View Details</button>
       </div>

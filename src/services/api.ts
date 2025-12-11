@@ -97,6 +97,7 @@ function transformJavaPOI(raw: RawJavaPOI): Tweet {
     type: (raw.type as Tweet['type']) || 'climateaction',
     replyToTweetId: raw.replyToTweetId,
     expandedUrl: raw.expandedUrl,
+    source: 'bluesky', // Bluesky source
   }
 }
 
