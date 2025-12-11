@@ -1,9 +1,9 @@
 // Import organized stylesheets
-@import 'variables.scss';
-@import 'base.scss';
-@import 'layout.scss';
-@import 'components/messages.scss';
-@import 'components/ui.scss';
-@import 'components/map.scss';
-@import 'components/media.scss';
-@import 'utilities.scss';
+@use 'variables.scss';
+@use 'base.scss';
+@use 'layout.scss';
+@use 'components/messages.scss';
+@use 'components/ui.scss';
+@use 'components/map.scss';
+@use 'components/media.scss';
+@use 'utilities.scss';
