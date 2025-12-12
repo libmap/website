@@ -4,7 +4,7 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  background-color: skyblue;
+  background-color: #e8eef5;
 }
 
 .back-button {
@@ -123,7 +123,7 @@
 
 .message-card {
   padding: 12px;
-  background: var(--color-surface);
+  background: #ffffff;
   border: 1px solid var(--color-border);
   cursor: pointer;
   transition: all 0.2s ease;
@@ -173,7 +173,7 @@
 
 @keyframes highlight-blink {
   0% {
-    background-color: var(--color-surface);
+    background-color: #ffffff;
   }
   25% {
     background-color: rgba(59, 130, 246, 0.2);
@@ -186,7 +186,7 @@
     background-color: rgba(59, 130, 246, 0.2);
   }
   100% {
-    background-color: var(--color-surface);
+    background-color: #ffffff;
     box-shadow: none;
   }
 }

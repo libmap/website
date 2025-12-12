@@ -5,13 +5,13 @@ import { BASE_TILES, type BaseTileConfig } from '@/lib/layers'
 import {
   HomeButtonControl,
   GlobeButtonControl,
-  MiniMapControl,
+  // MiniMapControl,
   GeocoderControl,
   ShareLinkControl,
 } from './controls'
-import { DrawControls } from './DrawControls'
+// import { DrawControls } from './DrawControls'
 
-import '@watergis/maplibre-gl-terradraw/dist/maplibre-gl-terradraw.css'
+// import '@watergis/maplibre-gl-terradraw/dist/maplibre-gl-terradraw.css'
 
 export function MapControls() {
   const map = useStore((state) => state.map.instance)
@@ -30,7 +30,7 @@ export function MapControls() {
     scale?: maplibregl.ScaleControl
     geocoder?: GeocoderControl
     geolocate?: maplibregl.GeolocateControl
-    minimap?: MiniMapControl
+    // minimap?: MiniMapControl
     draw?: any
     drawColorPicker?: any
     homeButton?: HomeButtonControl
@@ -74,10 +74,10 @@ export function MapControls() {
     map.addControl(geolocateControl, 'top-left')
     controlsRef.current.geolocate = geolocateControl
 
-    // MiniMap control
-    const minimap = new MiniMapControl()
-    map.addControl(minimap, 'bottom-right')
-    controlsRef.current.minimap = minimap
+    // MiniMap control - temporarily disabled
+    // const minimap = new MiniMapControl()
+    // map.addControl(minimap, 'bottom-right')
+    // controlsRef.current.minimap = minimap
 
     // Home button
     const homeButton = new HomeButtonControl(() => {
@@ -151,7 +151,7 @@ export function MapControls() {
       if (controlsRef.current.scale) map.removeControl(controlsRef.current.scale)
       if (controlsRef.current.geocoder) map.removeControl(controlsRef.current.geocoder)
       if (controlsRef.current.geolocate) map.removeControl(controlsRef.current.geolocate)
-      if (controlsRef.current.minimap) map.removeControl(controlsRef.current.minimap)
+      // if (controlsRef.current.minimap) map.removeControl(controlsRef.current.minimap)
       if (controlsRef.current.homeButton) map.removeControl(controlsRef.current.homeButton)
       if (controlsRef.current.shareLink) map.removeControl(controlsRef.current.shareLink)
       if (controlsRef.current.globeButton) map.removeControl(controlsRef.current.globeButton)
@@ -170,5 +170,7 @@ export function MapControls() {
     setVisibleLayers,
   ])
 
-  return <DrawControls map={map} controlsRef={controlsRef} />
+  // Draw controls temporarily disabled
+  return null
+  // return <DrawControls map={map} controlsRef={controlsRef} />
 }
