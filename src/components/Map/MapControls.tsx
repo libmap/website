@@ -2,7 +2,13 @@ import { useEffect, useRef } from 'react'
 import maplibregl from 'maplibre-gl'
 import { useStore } from '@/store'
 import { BASE_TILES, type BaseTileConfig } from '@/lib/layers'
-import { HomeButtonControl, GlobeButtonControl, MiniMapControl, GeocoderControl } from './controls'
+import {
+  HomeButtonControl,
+  GlobeButtonControl,
+  MiniMapControl,
+  GeocoderControl,
+  ShareLinkControl,
+} from './controls'
 import { DrawControls } from './DrawControls'
 
 import '@watergis/maplibre-gl-terradraw/dist/maplibre-gl-terradraw.css'
@@ -29,6 +35,7 @@ export function MapControls() {
     drawColorPicker?: any
     homeButton?: HomeButtonControl
     globeButton?: GlobeButtonControl
+    shareLink?: ShareLinkControl
   }>({})
 
   useEffect(() => {
@@ -128,6 +135,11 @@ export function MapControls() {
     map.addControl(homeButton, 'bottom-right')
     controlsRef.current.homeButton = homeButton
 
+    // Share link button
+    const shareLink = new ShareLinkControl()
+    map.addControl(shareLink, 'bottom-right')
+    controlsRef.current.shareLink = shareLink
+
     // Globe button
     const globeButton = new GlobeButtonControl()
     map.addControl(globeButton, 'top-right')
@@ -141,6 +153,7 @@ export function MapControls() {
       if (controlsRef.current.geolocate) map.removeControl(controlsRef.current.geolocate)
       if (controlsRef.current.minimap) map.removeControl(controlsRef.current.minimap)
       if (controlsRef.current.homeButton) map.removeControl(controlsRef.current.homeButton)
+      if (controlsRef.current.shareLink) map.removeControl(controlsRef.current.shareLink)
       if (controlsRef.current.globeButton) map.removeControl(controlsRef.current.globeButton)
       controlsRef.current = {}
     }

@@ -3,6 +3,7 @@ import { useStore } from '@/store'
 import type { URLState } from '@/types'
 
 // Default map position (Vienna/Europe center)
+export { buildUrl }
 const DEFAULT_CENTER = { lat: 22.02455, lng: 0.08789 }
 const DEFAULT_ZOOM = 3
 

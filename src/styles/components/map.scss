@@ -408,3 +408,19 @@
     background: #f0f0f0;
   }
 }
+
+// Terra Draw Color Picker Button
+.maplibregl-terradraw-mode {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  span {
+    display: block !important;
+    width: 20px !important;
+    height: 20px !important;
+    border-radius: 3px !important;
+    border: 2px solid white !important;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1) !important;
+  }
+}
