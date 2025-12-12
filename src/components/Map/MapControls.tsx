@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import maplibregl, { IControl } from 'maplibre-gl'
 import MapboxDraw from '@mapbox/mapbox-gl-draw'
 import { useStore } from '@/store'
+import { BASE_TILES } from '@/lib/layers'
 
 import '@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css'
 
@@ -23,7 +24,7 @@ class HomeButtonControl implements IControl {
     button.type = 'button'
     button.title = 'Overview'
     button.setAttribute('aria-label', 'Overview')
-    button.innerHTML = '<span class="nf nf-fa-home"></span>'
+    button.innerHTML = '<svg viewBox="0 0 20 20" width="20" height="20" fill="currentColor"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/></svg>'
     button.addEventListener('click', this._onClick)
 
     this._container.appendChild(button)
@@ -519,6 +520,8 @@ export function MapControls() {
   const setStateBefore = useStore((state) => state.setStateBefore)
   const setVisibleTweetIds = useStore((state) => state.setVisibleTweetIds)
   const tweetsData = useStore((state) => state.tweets.data)
+  const visibleLayers = useStore((state) => state.layers.visible)
+  const setVisibleLayers = useStore((state) => state.setVisibleLayers)
 
   const controlsRef = useRef<{
     navigation?: maplibregl.NavigationControl
@@ -638,6 +641,9 @@ export function MapControls() {
       // Reset to page 1
       setPage(1)
 
+      // Set visible layers to satellite and tweets only
+      setVisibleLayers(['satellite', 'tweets'])
+
       // Reset to default state
       const defaultCenter = { lat: 22, lng: 0 }
       const defaultZoom = 3
@@ -679,6 +685,8 @@ export function MapControls() {
     setStateBefore,
     setVisibleTweetIds,
     tweetsData,
+    visibleLayers,
+    setVisibleLayers,
   ])
 
   return null
