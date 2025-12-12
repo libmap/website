@@ -89,6 +89,8 @@
     "react-window": "^1.8.10",
     "sass": "^1.79.1",
     "sharp": "^0.34.3",
+    "terra-draw": "^1.20.0",
+    "terra-draw-maplibre-gl-adapter": "^1.2.3",
     "topojson-simplify": "^3.0.3",
     "twitter-widgets": "^2.0.0",
     "webpack-fix-style-only-entries": "^0.6.1",
