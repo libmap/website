@@ -644,6 +644,27 @@ export function MapControls() {
       // Set visible layers to satellite and tweets only
       setVisibleLayers(['satellite', 'tweets'])
 
+      // Immediately remove overlay layers from map for instant visual feedback
+      const currentLayers = map.getStyle().layers || []
+      const baseLayerIds = BASE_TILES.map((t) => t.id)
+      currentLayers.forEach((layer) => {
+        const layerId = layer.id
+        // Skip base layers, tweets, and MapLibre internal layers
+        if (
+          !baseLayerIds.includes(layerId) &&
+          layerId !== 'tweets' &&
+          !layerId.startsWith('gl-draw') &&
+          !layerId.startsWith('base-')
+        ) {
+          if (map.getLayer(layerId)) {
+            map.removeLayer(layerId)
+          }
+          if (map.getSource(layerId)) {
+            map.removeSource(layerId)
+          }
+        }
+      })
+
       // Reset to default state
       const defaultCenter = { lat: 22, lng: 0 }
       const defaultZoom = 3
