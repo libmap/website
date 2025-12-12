@@ -74,7 +74,7 @@ class MiniMapControl implements IControl {
 
   private options: MinimapOptions = {
     id: 'maplibregl-minimap',
-    width: '150px',
+    width: '250px',
     height: '150px',
     style: {
       version: 8,
