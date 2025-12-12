@@ -15,14 +15,12 @@ const geocoderApi = {
 
     try {
       const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(config.query)}&format=geojson&polygon_geojson=1&addressdetails=1`
+        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(config.query)}&format=geojson&addressdetails=1`
       )
       const data = await response.json()
 
       for (const feature of data.features) {
-        const center = feature.bbox
-          ? [(feature.bbox[0] + feature.bbox[2]) / 2, (feature.bbox[1] + feature.bbox[3]) / 2]
-          : feature.geometry.coordinates
+        const center = feature.geometry.coordinates as [number, number]
 
         features.push({
           type: 'Feature',
@@ -115,11 +113,7 @@ export class GeocoderControl implements IControl {
       item.className = 'geocoder-result-item'
       item.textContent = feature.place_name
       item.addEventListener('click', () => {
-        if (feature.bbox) {
-          this._map?.fitBounds(feature.bbox as [number, number, number, number], { padding: 50 })
-        } else {
-          this._map?.flyTo({ center: feature.center, zoom: 12 })
-        }
+        this._map?.flyTo({ center: feature.center, zoom: 12 })
         this._resultsContainer!.innerHTML = ''
         this._input!.value = ''
         this.toggleExpand()
