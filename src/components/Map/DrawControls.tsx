@@ -72,7 +72,7 @@ export function DrawControls({ map, controlsRef }: DrawControlsProps) {
         map.removeControl(controlsRef.current.draw as unknown as IControl)
       }
       const newDraw = createDrawControl(color)
-      map.addControl(newDraw as unknown as IControl, 'top-right')
+      map.addControl(newDraw as unknown as IControl, 'bottom-left')
       controlsRef.current.draw = newDraw
 
       // Re-inject color button into new Terra Draw toolbar
@@ -115,7 +115,7 @@ export function DrawControls({ map, controlsRef }: DrawControlsProps) {
 
     // Initialize Terra Draw control with default color
     const draw = createDrawControl(drawColorRef.current)
-    map.addControl(draw as unknown as IControl, 'top-right')
+    map.addControl(draw as unknown as IControl, 'bottom-left')
     controlsRef.current.draw = draw
 
     // Inject color button into Terra Draw toolbar after it's rendered

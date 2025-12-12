@@ -229,6 +229,17 @@
 
 // MapLibre Custom Controls
 
+// Make bottom-left use flexbox with column-reverse so last-added controls appear on top
+.maplibregl-ctrl-bottom-left {
+  display: flex !important;
+  flex-direction: column-reverse !important;
+  align-items: flex-start !important;
+
+  .maplibregl-ctrl {
+    float: none !important;
+  }
+}
+
 // MiniMap Control
 .maplibregl-ctrl-minimap {
   background: white;
