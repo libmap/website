@@ -19,7 +19,6 @@ export interface URLState {
   center: Coordinates
   zoom: number
   layers: string[]
-  tweetId?: string | undefined
   account?: string | undefined
   hashtag?: string | undefined
   polygon?: string | undefined // geohash encoded

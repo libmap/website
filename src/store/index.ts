@@ -33,6 +33,7 @@ interface AppState {
   // Tweet state
   tweets: {
     data: Map<string, Tweet>
+    urlToTweetId: Map<string, string> // URL → tweet ID mapping for URL-based activation
     visibleIds: string[]
     activeTweetId: string | null
     activeStoryId: string | null
@@ -126,6 +127,7 @@ export const useStore = create<AppState>()(
       // Tweet state
       tweets: {
         data: new Map(),
+        urlToTweetId: new Map(),
         visibleIds: [],
         activeTweetId: null,
         activeStoryId: null,
@@ -144,8 +146,15 @@ export const useStore = create<AppState>()(
       setTweets: (tweets) =>
         set((state) => {
           const data = new Map(state.tweets.data)
-          tweets.forEach((tweet) => data.set(tweet.id, tweet))
-          return { tweets: { ...state.tweets, data } }
+          const urlToTweetId = new Map(state.tweets.urlToTweetId)
+          tweets.forEach((tweet) => {
+            data.set(tweet.id, tweet)
+            // Build URL → tweet ID mapping for URL-based activation
+            if (tweet.expandedUrl) {
+              urlToTweetId.set(tweet.expandedUrl, tweet.id)
+            }
+          })
+          return { tweets: { ...state.tweets, data, urlToTweetId } }
         }),
       setVisibleTweetIds: (visibleIds) =>
         set((state) => ({

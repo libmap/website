@@ -44,7 +44,6 @@ function parseUrlString(urlString: string): Partial<URLState> {
     const lng = search.get('lng')
     const zoom = search.get('z')
     const layers = search.get('ls')
-    const tweet = search.get('t')
     const polygons = search.get('polygons')
 
     if (lat && lng) {
@@ -60,10 +59,6 @@ function parseUrlString(urlString: string): Partial<URLState> {
 
     if (layers) {
       result.layers = layers.split(URL_CONFIG.listDivider).filter((l) => l !== 'empty')
-    }
-
-    if (tweet) {
-      result.tweetId = tweet
     }
 
     if (polygons) {
@@ -89,7 +84,7 @@ function parseUrl(): Partial<URLState> {
  * Format: /@account/~hashtag/map?ls=dark,tweets&z=4&lng=26.23535&lat=10.09867
  */
 function buildUrl(state: URLState): string {
-  const { center, zoom, layers, tweetId, account, hashtag, polygon } = state
+  const { center, zoom, layers, account, hashtag, polygon } = state
 
   // Build special keys path
   const specialParts: string[] = []
@@ -115,10 +110,6 @@ function buildUrl(state: URLState): string {
   params.set('lng', center.lng.toFixed(5))
   params.set('lat', center.lat.toFixed(5))
 
-  if (tweetId) {
-    params.set('t', tweetId)
-  }
-
   if (polygon) {
     params.set('polygons', polygon)
   }
@@ -130,7 +121,6 @@ export function useUrlState() {
   const {
     setMapView,
     setVisibleLayers,
-    selectTweet,
     setFilter,
     setInitialized,
     map,
@@ -149,10 +139,6 @@ export function useUrlState() {
       setVisibleLayers(urlState.layers)
     }
 
-    if (urlState.tweetId) {
-      selectTweet(urlState.tweetId)
-    }
-
     if (urlState.account) {
       setFilter('account', urlState.account)
     }
@@ -162,7 +148,7 @@ export function useUrlState() {
     }
 
     setInitialized(true)
-  }, [setMapView, setVisibleLayers, selectTweet, setFilter, setInitialized])
+  }, [setMapView, setVisibleLayers, setFilter, setInitialized])
 
   const syncToUrl = useCallback(() => {
     const state: URLState = {
@@ -171,9 +157,6 @@ export function useUrlState() {
       layers: layers.visible,
     }
 
-    if (tweets.activeTweetId) {
-      state.tweetId = tweets.activeTweetId
-    }
     if (tweets.filters.account) {
       state.account = tweets.filters.account
     }
@@ -183,7 +166,7 @@ export function useUrlState() {
 
     const url = buildUrl(state)
     window.history.replaceState({}, '', url)
-  }, [map.center, map.zoom, layers.visible, tweets.activeTweetId, tweets.filters])
+  }, [map.center, map.zoom, layers.visible, tweets.filters])
 
   /**
    * Apply view from a URL string (e.g., from a tweet's URL)
