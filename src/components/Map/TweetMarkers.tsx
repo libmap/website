@@ -125,9 +125,7 @@ export function TweetMarkers() {
   // Create popup content for a tweet
   const createPopupContent = useCallback((tweet: Tweet): string => {
     const avatarUrl =
-      tweet.authorAvatar && tweet.authorAvatar !== ''
-        ? tweet.authorAvatar
-        : '/static/avatar_icon.png'
+      tweet.authorAvatar && tweet.authorAvatar !== '' ? tweet.authorAvatar : '/avatar_icon.png'
 
     const hashtagsHtml =
       tweet.hashtags && tweet.hashtags.length > 0
@@ -141,7 +139,7 @@ export function TweetMarkers() {
             src="${avatarUrl}"
             alt="${tweet.author}"
             class="tweet-avatar"
-            onerror="this.onerror=null; this.src='/static/avatar_icon.png';"
+            onerror="this.onerror=null; this.src='/avatar_icon.png';"
           />
           <div class="tweet-author-info">
             <strong>${tweet.author}</strong>
@@ -278,7 +276,14 @@ export function TweetMarkers() {
         currentPopups.set(tweet.id, popup)
       }
     }
-  }, [map, tweetsToShow, isTweetsVisible, createPopupContent, handleMarkerClick, handleTweetActivation])
+  }, [
+    map,
+    tweetsToShow,
+    isTweetsVisible,
+    createPopupContent,
+    handleMarkerClick,
+    handleTweetActivation,
+  ])
 
   // Update visible tweets when map moves
   useEffect(() => {

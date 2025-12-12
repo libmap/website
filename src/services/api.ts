@@ -58,7 +58,7 @@ function transformPythonTweet(id: string, raw: RawPythonTweet): Tweet | null {
   }
 
   // Default avatar if none provided
-  const avatar = raw.avatar || 'https://libmap.org/static/avatar_icon.png'
+  const avatar = raw.avatar || 'https://libmap.org/avatar_icon.png'
 
   // Transform media URLs to TweetMedia objects
   const media = raw.media?.map((url) => ({
