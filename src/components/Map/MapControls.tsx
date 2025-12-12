@@ -53,7 +53,7 @@ export function MapControls() {
 
     // Geocoder control (custom)
     const geocoder = new GeocoderControl()
-    map.addControl(geocoder, 'top-right')
+    map.addControl(geocoder, 'top-left')
     controlsRef.current.geocoder = geocoder
 
     // Geolocate control
@@ -64,7 +64,7 @@ export function MapControls() {
       trackUserLocation: false,
       showUserLocation: true,
     })
-    map.addControl(geolocateControl, 'top-right')
+    map.addControl(geolocateControl, 'top-left')
     controlsRef.current.geolocate = geolocateControl
 
     // MiniMap control
