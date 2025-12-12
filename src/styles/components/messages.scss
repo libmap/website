@@ -125,7 +125,6 @@
   padding: 12px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  //cborder-radius: var(--radius-md);
   cursor: pointer;
   transition: all 0.2s ease;
 
@@ -194,6 +193,24 @@
 
 .story-container {
   margin-bottom: 16px;
+
+  // Single messages get full rounded corners
+  .message-card:only-child {
+    border-radius: var(--radius-sm);
+  }
+
+  // Multi-message stories get special rounding
+  .message-card:first-child:not(:only-child) {
+    border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  }
+
+  .message-card:last-child:not(:only-child) {
+    border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+  }
+
+  .message-card:not(:first-child):not(:last-child) {
+    border-radius: 0;
+  }
 }
 
 .message-header {

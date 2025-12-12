@@ -242,12 +242,12 @@ export function TweetMarkers() {
         const el = createMarkerElement(tweet.type)
 
         const popup = new maplibregl.Popup({
-          offset: 25,
+          offset: 20,
           maxWidth: '250px',
           className: 'tweet-popup-container',
         }).setHTML(createPopupContent(tweet))
 
-        const marker = new maplibregl.Marker({ element: el })
+        const marker = new maplibregl.Marker({ element: el, anchor: 'bottom' })
           .setLngLat([tweet.coordinates.lng, tweet.coordinates.lat])
           .setPopup(popup)
           .addTo(map)
