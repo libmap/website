@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import maplibregl, { IControl } from 'maplibre-gl'
-import MapboxDraw from '@mapbox/mapbox-gl-draw'
+import { MaplibreTerradrawControl } from '@watergis/maplibre-gl-terradraw'
 import { useStore } from '@/store'
 import { BASE_TILES, type BaseTileConfig } from '@/lib/layers'
 import {
@@ -10,7 +10,7 @@ import {
   GeocoderControl,
 } from './controls'
 
-import '@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css'
+import '@watergis/maplibre-gl-terradraw/dist/maplibre-gl-terradraw.css'
 
 export function MapControls() {
   const map = useStore((state) => state.map.instance)
@@ -30,7 +30,7 @@ export function MapControls() {
     geocoder?: GeocoderControl
     geolocate?: maplibregl.GeolocateControl
     minimap?: MiniMapControl
-    draw?: MapboxDraw
+    draw?: MaplibreTerradrawControl
     homeButton?: HomeButtonControl
     globeButton?: GlobeButtonControl
   }>({})
@@ -76,59 +76,10 @@ export function MapControls() {
     map.addControl(minimap, 'bottom-right')
     controlsRef.current.minimap = minimap
 
-    // Draw control
-    const draw = new MapboxDraw({
-      displayControlsDefault: false,
-      controls: {
-        polygon: true,
-        line_string: true,
-        trash: true,
-      },
-      styles: [
-        // Polygon fill
-        {
-          id: 'gl-draw-polygon-fill',
-          type: 'fill',
-          filter: ['all', ['==', '$type', 'Polygon'], ['!=', 'mode', 'static']],
-          paint: {
-            'fill-color': '#3b82f6',
-            'fill-outline-color': '#3b82f6',
-            'fill-opacity': 0.3,
-          },
-        },
-        // Polygon stroke
-        {
-          id: 'gl-draw-polygon-stroke',
-          type: 'line',
-          filter: ['all', ['==', '$type', 'Polygon'], ['!=', 'mode', 'static']],
-          paint: {
-            'line-color': '#3b82f6',
-            'line-width': 3,
-          },
-        },
-        // Line
-        {
-          id: 'gl-draw-line',
-          type: 'line',
-          filter: ['all', ['==', '$type', 'LineString'], ['!=', 'mode', 'static']],
-          paint: {
-            'line-color': '#3b82f6',
-            'line-width': 3,
-          },
-        },
-        // Point (vertex)
-        {
-          id: 'gl-draw-point',
-          type: 'circle',
-          filter: ['all', ['==', '$type', 'Point'], ['==', 'meta', 'vertex']],
-          paint: {
-            'circle-radius': 5,
-            'circle-color': '#fff',
-            'circle-stroke-color': '#3b82f6',
-            'circle-stroke-width': 2,
-          },
-        },
-      ],
+    // Terra Draw control with only requested tools
+    const draw = new MaplibreTerradrawControl({
+      modes: ['linestring', 'polygon', 'freehand', 'select', 'delete', 'download'],
+      open: true,
     })
     map.addControl(draw as unknown as IControl, 'top-right')
     controlsRef.current.draw = draw
