@@ -38,9 +38,11 @@ export function MapControls() {
   useEffect(() => {
     if (!map) return
 
-    // Navigation control (zoom buttons, no compass)
+    // Navigation control (zoom buttons + compass with pitch visualization)
     const navigationControl = new maplibregl.NavigationControl({
-      showCompass: false,
+      visualizePitch: true,
+      showZoom: true,
+      showCompass: true,
     })
     map.addControl(navigationControl, 'top-right')
     controlsRef.current.navigation = navigationControl

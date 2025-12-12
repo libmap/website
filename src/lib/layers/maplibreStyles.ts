@@ -50,6 +50,9 @@ export function createRasterStyle(config: BaseTileConfig): StyleSpecification {
 
   return {
     version: 8,
+    projection: {
+      type: 'globe',
+    },
     sources: {
       [BASE_SOURCE_ID]: {
         type: 'raster',
@@ -70,6 +73,30 @@ export function createRasterStyle(config: BaseTileConfig): StyleSpecification {
         },
       },
     ],
+    // sky: {
+    //   'atmosphere-blend': [
+    //     'interpolate',
+    //     ['linear'],
+    //     ['zoom'],
+    //     0,
+    //     1,
+    //     5,
+    //     1,
+    //     7,
+    //     0,
+    //   ],
+    // },
+    // light: {
+    //   anchor: 'map',
+    //   position: [1.5, 90, 80],
+    // },
+    // fog: {
+    //   range: [0.5, 10],
+    //   color: 'rgba(186, 210, 235, 0.8)',
+    //   'horizon-blend': 0.1,
+    //   'high-color': '#add8e6',
+    //   'space-color': '#d8f2ff',
+    // },
   }
 }
 
