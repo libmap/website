@@ -399,9 +399,9 @@
   background: transparent;
   cursor: pointer;
 
-  .nf {
-    font-size: 14px;
+  svg {
     color: #333;
+    pointer-events: none;
   }
 
   &:hover {

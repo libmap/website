@@ -200,7 +200,7 @@ export const useStore = create<AppState>()(
       // UI state
       ui: {
         sidebarTab: 'messages',
-        bottomSheetHeight: 30,
+        bottomSheetHeight: 50,
         isMobile: false,
       },
       setSidebarTab: (sidebarTab) =>

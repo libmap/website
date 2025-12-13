@@ -40,16 +40,20 @@ export function BottomSheet({ children }: BottomSheetProps) {
     // Snap to preset heights
     if (height < 20) {
       setHeight(10) // Minimized
-    } else if (height < 50) {
-      setHeight(30) // Default
+    } else if (height < 40) {
+      setHeight(30) // Small
+    } else if (height < 60) {
+      setHeight(50) // Medium
     } else {
       setHeight(70) // Expanded
     }
   }, [height, setHeight])
 
+  const isMinimized = height <= 10
+
   return (
     <div
-      className="bottom-sheet"
+      className={`bottom-sheet ${isMinimized ? 'minimized' : ''}`}
       style={{ height: `${height}vh` }}
       role="complementary"
       aria-label="Messages and Layers panel"
@@ -69,7 +73,7 @@ export function BottomSheet({ children }: BottomSheetProps) {
       >
         <div className="handle-bar" />
       </div>
-      <div className="bottom-sheet-content">{children}</div>
+      {!isMinimized && <div className="bottom-sheet-content">{children}</div>}
     </div>
   )
 }

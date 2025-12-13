@@ -11,14 +11,23 @@
   display: flex;
   flex-direction: column;
   transition: height 0.1s ease-out;
+
+  &.minimized {
+    background: transparent;
+    box-shadow: none;
+    pointer-events: none;
+  }
 }
 
 .drag-handle {
   display: flex;
   justify-content: center;
+  align-self: center;
+  width: fit-content;
   padding: 12px;
   cursor: grab;
   touch-action: none;
+  pointer-events: auto;
 
   &:active {
     cursor: grabbing;

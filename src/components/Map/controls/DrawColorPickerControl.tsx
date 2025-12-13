@@ -21,15 +21,15 @@ const COLORS = [
 export class DrawColorPicker {
   private paletteContainer: HTMLDivElement | null = null
   private colorButton: HTMLButtonElement | null = null
-  private selectedColor: string = COLORS[0]
-  private onColorChange?: (color: string) => void
+  private selectedColor: string = COLORS[0]!
+  private onColorChange: ((color: string) => void) | undefined
   private isOpen: boolean = false
 
   constructor(onColorChange?: (color: string) => void) {
     this.onColorChange = onColorChange
   }
 
-  createColorButton(terraDrawContainer: HTMLElement): HTMLButtonElement {
+  createColorButton(_terraDrawContainer: HTMLElement): HTMLButtonElement {
     // Create color button
     this.colorButton = document.createElement('button')
     this.colorButton.type = 'button'
@@ -173,9 +173,9 @@ export class DrawColorPicker {
     const match = rgb.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/)
     if (!match) return rgb
 
-    const r = parseInt(match[1])
-    const g = parseInt(match[2])
-    const b = parseInt(match[3])
+    const r = parseInt(match[1]!)
+    const g = parseInt(match[2]!)
+    const b = parseInt(match[3]!)
 
     return (
       '#' +

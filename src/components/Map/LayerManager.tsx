@@ -137,8 +137,8 @@ export function LayerManager() {
       id: config.id,
       type: 'raster',
       source: config.id,
-      minzoom: config.minZoom,
-      maxzoom: config.maxZoom,
+      minzoom: config.minZoom ?? 0,
+      maxzoom: config.maxZoom ?? 22,
       paint: {
         'raster-opacity': config.opacity ?? 0.8,
       },
