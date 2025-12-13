@@ -1,6 +1,6 @@
 config.json
-dist
-node_modules
+dist/
+node_modules/
 .htaccess
 *.pmtiles
-dist-react
+dist-react/
