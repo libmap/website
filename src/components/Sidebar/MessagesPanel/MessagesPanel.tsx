@@ -3,6 +3,7 @@ import { useStore } from '@/store'
 import { useTweets } from '@/hooks/useTweets'
 import { useUrlState } from '@/hooks/useUrlState'
 import { getTweetsOfStory, getHeadTweetById } from '@/utils/stories'
+import { buildUrl } from '@/hooks/useUrlState'
 import type { TweetMedia } from '@/types'
 import { formatDateTime, getSourceDisplayText, getSourceBadgeClass } from './utils'
 import { MessageText, MessageHashtags, MessageMedia } from './MessageCard'
@@ -146,7 +147,9 @@ export function MessagesPanel() {
   useEffect(() => {
     if (messagesListRef.current && !isStoryView) {
       // Find the scrollable parent (sidebar-content for desktop, bottom-sheet-content for mobile)
-      const scrollableParent = messagesListRef.current.closest('.sidebar-content, .bottom-sheet-content')
+      const scrollableParent = messagesListRef.current.closest(
+        '.sidebar-content, .bottom-sheet-content'
+      )
       if (scrollableParent) {
         scrollableParent.scrollTop = 0
       }
@@ -188,6 +191,30 @@ export function MessagesPanel() {
 
   const handleClearFilter = (type: 'account' | 'hashtag') => {
     setFilter(type, null)
+  }
+
+  const handleCopyLink = () => {
+    const state = useStore.getState()
+    const urlState = {
+      center: state.map.center,
+      zoom: state.map.zoom,
+      layers: state.layers.visible,
+      tweetId: state.tweets.activeTweetId || undefined,
+      account: state.tweets.filters.account || undefined,
+      hashtag: state.tweets.filters.hashtag || undefined,
+    }
+
+    const url = buildUrl(urlState)
+    const fullUrl = `${window.location.origin}${url}`
+
+    navigator.clipboard
+      .writeText(fullUrl)
+      .then(() => {
+        console.log('Link copied to clipboard:', fullUrl)
+      })
+      .catch((err) => {
+        console.error('Failed to copy link:', err)
+      })
   }
 
   const handleBack = () => {
@@ -276,6 +303,44 @@ export function MessagesPanel() {
       {!isStoryView && (
         <div className="messages-count">
           {visibleTweets.length} message{visibleTweets.length !== 1 ? 's' : ''} in view
+        </div>
+      )}
+
+      {/* Post instructions (only in list view) */}
+      {!isStoryView && (
+        <div className="post-instructions">
+          <div className="instruction-header">
+            <span className="instruction-icon">📍</span>
+            <span className="instruction-text">How to add your post to the map:</span>
+          </div>
+          <div className="instruction-steps">
+            <div className="instruction-step">
+              <span className="step-number">1</span>
+              <span className="step-text">Select layers, zoom, and location</span>
+            </div>
+            <div className="instruction-step">
+              <span className="step-number">2</span>
+              <div className="step-content">
+                <span className="step-text">Copy the map URL</span>
+                <button
+                  type="button"
+                  className="copy-link-btn"
+                  onClick={handleCopyLink}
+                  title="Copy current map link"
+                >
+                  <svg viewBox="0 0 20 20" width="14" height="14" fill="currentColor">
+                    <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47C13.456 7.68 14.19 8 15 8z" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <div className="instruction-step">
+              <span className="step-number">3</span>
+              <span className="step-text">
+                Post to Bluesky or Mastodon - your message appears here!
+              </span>
+            </div>
+          </div>
         </div>
       )}
 

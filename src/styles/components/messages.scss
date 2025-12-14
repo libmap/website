@@ -32,6 +32,91 @@
   border-bottom: 1px solid var(--color-border);
 }
 
+.post-instructions {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  margin-bottom: 12px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--color-text);
+
+  .instruction-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    font-weight: 600;
+  }
+
+  .instruction-icon {
+    font-size: 14px;
+  }
+
+  .instruction-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .instruction-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .step-number {
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    background: var(--color-primary);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 600;
+    margin-top: 1px;
+  }
+
+  .step-content {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .step-text {
+    margin-right: 2px;
+  }
+
+  .copy-link-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 4px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-background);
+    color: var(--color-text);
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: var(--color-surface);
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+    }
+
+    svg {
+      flex-shrink: 0;
+    }
+  }
+}
+
 .loading-state {
   display: flex;
   flex-direction: column;
