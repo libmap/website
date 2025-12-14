@@ -147,10 +147,16 @@ export function MessagesPanel() {
   // Scroll to top when pagination changes
   useEffect(() => {
     if (messagesListRef.current && !isStoryView) {
-      // Find the scrollable parent (sidebar-content for desktop, bottom-sheet-content for mobile)
-      const scrollableParent = messagesListRef.current.closest(
-        '.sidebar-content, .bottom-sheet-content'
-      )
+      // On mobile, the scrollable container is .bottom-sheet-content
+      // On desktop, it's .sidebar-content
+      // We need to check for mobile first since .sidebar-content exists on mobile too
+      let scrollableParent = messagesListRef.current.closest('.bottom-sheet-content')
+
+      // If not found (desktop), look for .sidebar-content
+      if (!scrollableParent) {
+        scrollableParent = messagesListRef.current.closest('.sidebar-content')
+      }
+
       if (scrollableParent) {
         scrollableParent.scrollTop = 0
       }
