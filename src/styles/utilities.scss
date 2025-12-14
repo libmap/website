@@ -44,6 +44,8 @@
 .bottom-sheet-content {
   flex: 1;
   overflow-y: auto;
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
 }
 
 // Search in view button
