@@ -4,3 +4,4 @@ node_modules/
 .htaccess
 *.pmtiles
 dist-react/
+dist-react/index.html

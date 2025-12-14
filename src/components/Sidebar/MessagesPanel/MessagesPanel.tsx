@@ -24,6 +24,7 @@ export function MessagesPanel() {
   const setStateBefore = useStore((state) => state.setStateBefore)
   const stateBefore = useStore((state) => state.stateBefore)
   const allTweetsMap = useStore((state) => state.tweets.data)
+  const setVisibleLayers = useStore((state) => state.setVisibleLayers)
 
   // Refs for message cards to enable scrolling
   const messageRefs = useRef<Map<string, HTMLElement>>(new Map())
@@ -215,6 +216,24 @@ export function MessagesPanel() {
       .catch((err) => {
         console.error('Failed to copy link:', err)
       })
+  }
+
+  const handleMessageHover = (tweetId: string) => {
+    if (!map || isStoryView) return
+
+    // Find the tweet in the full tweets map
+    const tweet = allTweetsMap.get(tweetId)
+    if (!tweet) return
+
+    // Set layers to satellite and tweets
+    setVisibleLayers(['satellite', 'tweets'])
+
+    // Pan to tweet location with home zoom (z=3)
+    map.flyTo({
+      center: [tweet.coordinates.lng, tweet.coordinates.lat],
+      zoom: 3,
+      duration: 1000,
+    })
   }
 
   const handleBack = () => {
@@ -449,6 +468,7 @@ export function MessagesPanel() {
                   }}
                   className={`message-card story-head ${activeTweetId === headTweet.id ? 'active' : ''} ${highlightedTweetId === headTweet.id ? 'highlight-blink' : ''}`}
                   onClick={() => handleTweetClick(headTweet.id)}
+                  onMouseEnter={() => handleMessageHover(headTweet.id)}
                 >
                   <header className="message-header">
                     <span className="author">{headTweet.author}</span>
@@ -487,6 +507,7 @@ export function MessagesPanel() {
                     }}
                     className={`message-card story-indent ${activeTweetId === storyTweet.id ? 'active' : ''} ${highlightedTweetId === storyTweet.id ? 'highlight-blink' : ''}`}
                     onClick={() => handleTweetClick(storyTweet.id)}
+                    onMouseEnter={() => handleMessageHover(storyTweet.id)}
                   >
                     <header className="message-header">
                       <span className="author">{storyTweet.author}</span>
