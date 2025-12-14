@@ -119,6 +119,20 @@ export function MapContainer() {
     }
   }, [])
 
+  // Apply initial padding when both map loads AND mobile is detected
+  useEffect(() => {
+    if (!mapInstance || !isMobile) return
+
+    const snappedHeights = [10, 30, 50, 70]
+    const isSnapped = snappedHeights.includes(bottomSheetHeight)
+
+    // Only apply if at a snapped height (should be 50 on initial load)
+    if (isSnapped) {
+      const bottomPaddingPx = (bottomSheetHeight / 100) * window.innerHeight
+      mapInstance.setPadding({ top: 0, bottom: bottomPaddingPx, left: 0, right: 0 })
+    }
+  }, [mapInstance, isMobile])
+
   // Track last snapped height to avoid crosshair moving during drag
   const snappedHeights = [10, 30, 50, 70]
   const isSnapped = snappedHeights.includes(bottomSheetHeight)
