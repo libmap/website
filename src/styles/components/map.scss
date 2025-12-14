@@ -402,6 +402,33 @@
   svg {
     color: #333;
     pointer-events: none;
+    width: 18px;
+    height: 18px;
+    margin-top: 1px;
+  }
+
+  &:hover {
+    background: #f0f0f0;
+  }
+}
+
+// Share Link Button Control
+.maplibregl-ctrl-share {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 29px;
+  height: 29px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+
+  svg {
+    color: #333;
+    pointer-events: none;
+    width: 18px;
+    height: 18px;
+    margin-top: 3px;
   }
 
   &:hover {
