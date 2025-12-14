@@ -65,11 +65,21 @@ export function MediaViewer({
         )}
 
         {currentMedia.type === 'photo' && (
-          <img src={currentMedia.url} alt="Full size media" className="media-viewer-image" />
+          <img
+            src={currentMedia.url}
+            alt="Full size media"
+            className="media-viewer-image"
+            onClick={hasMultiple ? goToNext : undefined}
+            style={{ cursor: hasMultiple ? 'pointer' : 'default' }}
+          />
         )}
 
         {currentMedia.type === 'video' && (
-          <div className="media-viewer-video-placeholder">
+          <div
+            className="media-viewer-video-placeholder"
+            onClick={hasMultiple ? goToNext : undefined}
+            style={{ cursor: hasMultiple ? 'pointer' : 'default' }}
+          >
             <span>🎥 Video</span>
             <p>This video cannot be displayed inline</p>
             <a href={currentMedia.url} target="_blank" rel="noopener noreferrer">

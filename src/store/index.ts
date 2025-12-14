@@ -61,11 +61,13 @@ interface AppState {
     bottomSheetHeight: number // percentage of viewport height
     isMobile: boolean
     isPreview: boolean
+    closePopups: number // increment to trigger popup closing
   }
   setSidebarTab: (tab: 'messages' | 'layers') => void
   setBottomSheetHeight: (height: number) => void
   setIsMobile: (isMobile: boolean) => void
   setIsPreview: (isPreview: boolean) => void
+  closeAllPopups: () => void
 
   // State restoration (for back navigation)
   stateBefore: {
@@ -205,6 +207,7 @@ export const useStore = create<AppState>()(
         bottomSheetHeight: 50,
         isMobile: false,
         isPreview: false,
+        closePopups: 0,
       },
       setSidebarTab: (sidebarTab) =>
         set((state) => ({
@@ -221,6 +224,10 @@ export const useStore = create<AppState>()(
       setIsPreview: (isPreview) =>
         set((state) => ({
           ui: { ...state.ui, isPreview },
+        })),
+      closeAllPopups: () =>
+        set((state) => ({
+          ui: { ...state.ui, closePopups: state.ui.closePopups + 1 },
         })),
 
       // State restoration

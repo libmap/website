@@ -72,6 +72,7 @@ export function TweetMarkers() {
   const setStateBefore = useStore((state) => state.setStateBefore)
   const pagination = useStore((state) => state.tweets.pagination)
   const allTweetsMap = useStore((state) => state.tweets.data)
+  const closePopups = useStore((state) => state.ui.closePopups)
 
   const { tweets: allTweets, visibleTweets, isLoading, updateVisibleTweets } = useTweets()
   const { applyViewFromUrl } = useUrlState()
@@ -309,13 +310,26 @@ export function TweetMarkers() {
 
   // Highlight active tweet marker
   useEffect(() => {
-    if (!activeTweetId) return
-
-    const marker = markersRef.current.get(activeTweetId)
-    if (marker) {
-      marker.togglePopup()
+    // Close any open popups first
+    for (const popup of popupsRef.current.values()) {
+      popup.remove()
     }
-  }, [activeTweetId])
+
+    // Open popup for active tweet if any
+    if (activeTweetId) {
+      const marker = markersRef.current.get(activeTweetId)
+      if (marker && map) {
+        marker.getPopup()?.addTo(map)
+      }
+    }
+  }, [activeTweetId, map])
+
+  // Close all popups when requested
+  useEffect(() => {
+    for (const popup of popupsRef.current.values()) {
+      popup.remove()
+    }
+  }, [closePopups])
 
   // Cleanup on unmount
   useEffect(() => {

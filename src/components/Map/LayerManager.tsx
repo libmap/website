@@ -16,6 +16,7 @@ export function LayerManager() {
   const loadingRef = useRef<Set<string>>(new Set())
   const prevBaseLayerRef = useRef<string | null>(null)
   const popupRef = useRef<maplibregl.Popup | null>(null)
+  const closePopups = useStore((state) => state.ui.closePopups)
 
   // Detect current base layer from visibleLayers
   const currentBaseLayer =
@@ -490,6 +491,14 @@ export function LayerManager() {
       }
     }
   }, [map, syncLayers])
+
+  // Close popup when requested
+  useEffect(() => {
+    if (popupRef.current) {
+      popupRef.current.remove()
+      popupRef.current = null
+    }
+  }, [closePopups])
 
   // Cleanup on unmount
   useEffect(() => {

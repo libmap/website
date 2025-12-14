@@ -25,6 +25,7 @@ export function MessagesPanel() {
   const stateBefore = useStore((state) => state.stateBefore)
   const allTweetsMap = useStore((state) => state.tweets.data)
   const setVisibleLayers = useStore((state) => state.setVisibleLayers)
+  const closeAllPopups = useStore((state) => state.closeAllPopups)
 
   // Refs for message cards to enable scrolling
   const messageRefs = useRef<Map<string, HTMLElement>>(new Map())
@@ -249,6 +250,12 @@ export function MessagesPanel() {
 
   const handleBack = () => {
     const previousTweetId = activeTweetId
+
+    // Close any open popups (MediaViewer and map popups)
+    setIsViewerOpen(false)
+    setViewerMedia(null)
+    setViewerIndex(0)
+    closeAllPopups()
 
     // Clear active tweet
     selectTweet(null)
