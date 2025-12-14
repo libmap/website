@@ -1,5 +1,4 @@
 import { useEffect, useRef } from 'react'
-import { useParams } from 'react-router-dom'
 import { MapContainer } from '@/components/Map/MapContainer'
 import { Sidebar } from '@/components/Sidebar/Sidebar'
 import { useUrlState } from '@/hooks/useUrlState'
@@ -7,7 +6,6 @@ import { useIsMobile } from '@/hooks/useMediaQuery'
 import { useStore } from '@/store'
 
 export function MapPage() {
-  const { account, hashtag } = useParams<{ account?: string; hashtag?: string }>()
   const { initFromUrl } = useUrlState()
   const isInitialized = useStore((state) => state.isInitialized)
   const setIsMobile = useStore((state) => state.setIsMobile)
@@ -22,7 +20,7 @@ export function MapPage() {
 
   // Initialize from URL on mount
   useEffect(() => {
-    const urlState = initFromUrl()
+    initFromUrl()
     // Ensure preview mode is off for MapPage
     setIsPreview(false)
   }, [initFromUrl, setIsPreview])

@@ -119,7 +119,13 @@ function buildUrl(state: URLState): string {
     params.set('polygons', polygon)
   }
 
-  return `${specialPath}${URL_CONFIG.prefix}?${params.toString()}`
+  const queryString = params.toString()
+  // Decode commas only in the ls (layers) parameter
+  const decodedQuery = queryString.replace(
+    /(ls=)([^&]*)/g,
+    (_match, prefix, value) => prefix + value.replace(/%2C/g, ',')
+  )
+  return `${specialPath}${URL_CONFIG.prefix}?${decodedQuery}`
 }
 
 export function useUrlState() {
