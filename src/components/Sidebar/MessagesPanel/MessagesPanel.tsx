@@ -150,16 +150,21 @@ export function MessagesPanel() {
       // On mobile, the scrollable container is .bottom-sheet-content
       // On desktop, it's .sidebar-content
       // We need to check for mobile first since .sidebar-content exists on mobile too
-      let scrollableParent = messagesListRef.current.closest('.bottom-sheet-content')
+      const scrollToTop = () => {
+        let scrollableParent = messagesListRef.current?.closest('.bottom-sheet-content')
 
-      // If not found (desktop), look for .sidebar-content
-      if (!scrollableParent) {
-        scrollableParent = messagesListRef.current.closest('.sidebar-content')
+        // If not found (desktop), look for .sidebar-content
+        if (!scrollableParent) {
+          scrollableParent = messagesListRef.current?.closest('.sidebar-content')
+        }
+
+        if (scrollableParent) {
+          scrollableParent.scrollTop = 0
+        }
       }
 
-      if (scrollableParent) {
-        scrollableParent.scrollTop = 0
-      }
+      // Use requestAnimationFrame to ensure DOM is ready
+      requestAnimationFrame(scrollToTop)
     }
   }, [pagination.currentPage, isStoryView])
 
