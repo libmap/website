@@ -469,6 +469,7 @@ export function MessagesPanel() {
                   className={`message-card story-head ${activeTweetId === headTweet.id ? 'active' : ''} ${highlightedTweetId === headTweet.id ? 'highlight-blink' : ''}`}
                   onClick={() => handleTweetClick(headTweet.id)}
                   onMouseEnter={() => handleMessageHover(headTweet.id)}
+                  onTouchStart={() => handleMessageHover(headTweet.id)}
                 >
                   <header className="message-header">
                     <span className="author">{headTweet.author}</span>
@@ -508,6 +509,7 @@ export function MessagesPanel() {
                     className={`message-card story-indent ${activeTweetId === storyTweet.id ? 'active' : ''} ${highlightedTweetId === storyTweet.id ? 'highlight-blink' : ''}`}
                     onClick={() => handleTweetClick(storyTweet.id)}
                     onMouseEnter={() => handleMessageHover(storyTweet.id)}
+                    onTouchStart={() => handleMessageHover(storyTweet.id)}
                   >
                     <header className="message-header">
                       <span className="author">{storyTweet.author}</span>
