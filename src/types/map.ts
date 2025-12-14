@@ -22,4 +22,5 @@ export interface URLState {
   account?: string | undefined
   hashtag?: string | undefined
   polygon?: string | undefined // geohash encoded
+  isPreview?: boolean | undefined
 }

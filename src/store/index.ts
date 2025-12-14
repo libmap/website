@@ -60,10 +60,12 @@ interface AppState {
     sidebarTab: 'messages' | 'layers'
     bottomSheetHeight: number // percentage of viewport height
     isMobile: boolean
+    isPreview: boolean
   }
   setSidebarTab: (tab: 'messages' | 'layers') => void
   setBottomSheetHeight: (height: number) => void
   setIsMobile: (isMobile: boolean) => void
+  setIsPreview: (isPreview: boolean) => void
 
   // State restoration (for back navigation)
   stateBefore: {
@@ -202,6 +204,7 @@ export const useStore = create<AppState>()(
         sidebarTab: 'messages',
         bottomSheetHeight: 50,
         isMobile: false,
+        isPreview: false,
       },
       setSidebarTab: (sidebarTab) =>
         set((state) => ({
@@ -214,6 +217,10 @@ export const useStore = create<AppState>()(
       setIsMobile: (isMobile) =>
         set((state) => ({
           ui: { ...state.ui, isMobile },
+        })),
+      setIsPreview: (isPreview) =>
+        set((state) => ({
+          ui: { ...state.ui, isPreview },
         })),
 
       // State restoration

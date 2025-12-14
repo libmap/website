@@ -45,6 +45,7 @@ function parseUrlString(urlString: string): Partial<URLState> {
     const zoom = search.get('z')
     const layers = search.get('ls')
     const polygons = search.get('polygons')
+    const preview = search.get('preview')
 
     if (lat && lng) {
       result.center = {
@@ -63,6 +64,10 @@ function parseUrlString(urlString: string): Partial<URLState> {
 
     if (polygons) {
       result.polygon = polygons
+    }
+
+    if (preview === '1' || preview === 'true') {
+      result.isPreview = true
     }
   } catch (e) {
     console.error('Failed to parse URL:', urlString, e)
@@ -148,6 +153,8 @@ export function useUrlState() {
     }
 
     setInitialized(true)
+
+    return urlState
   }, [setMapView, setVisibleLayers, setFilter, setInitialized])
 
   const syncToUrl = useCallback(() => {

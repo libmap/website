@@ -3,6 +3,7 @@ import { useMap } from '@/hooks/useMap'
 import { useUrlState } from '@/hooks/useUrlState'
 import { useStore } from '@/store'
 import { MapControls } from './MapControls'
+import { PreviewControls } from './PreviewControls'
 import { LayerManager } from './LayerManager'
 import { TweetMarkers } from './TweetMarkers'
 import { SearchInViewButton } from './SearchInViewButton'
@@ -15,6 +16,7 @@ export function MapContainer() {
   const { syncToUrl } = useUrlState()
   const mapInstance = useStore((state) => state.map.instance)
   const isMobile = useStore((state) => state.ui.isMobile)
+  const isPreview = useStore((state) => state.ui.isPreview)
   const bottomSheetHeight = useStore((state) => state.ui.bottomSheetHeight)
   const [lastSnappedHeight, setLastSnappedHeight] = useState(50)
 
@@ -133,19 +135,21 @@ export function MapContainer() {
   return (
     <div className="map-wrapper">
       <div ref={containerRef} id="map" className="map-container">
-        <img
-          src="/crosshair.png"
-          alt="Crosshair"
-          className="crosshair"
-          style={{ top: crosshairTop }}
-        />
+        {!isPreview && (
+          <img
+            src="/crosshair.png"
+            alt="Crosshair"
+            className="crosshair"
+            style={{ top: crosshairTop }}
+          />
+        )}
       </div>
       {mapInstance && (
         <>
-          <MapControls />
+          {isPreview ? <PreviewControls /> : <MapControls />}
           <LayerManager />
           <TweetMarkers />
-          <SearchInViewButton />
+          {!isPreview && <SearchInViewButton />}
         </>
       )}
     </div>

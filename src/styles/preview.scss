@@ -1,0 +1,49 @@
+// Preview mode styles for OG image generation
+// Hide all UI elements and ensure full viewport coverage
+
+body.preview-mode {
+  // Hide MapLibre attribution (may need for legal reasons - adjust if needed)
+  .maplibregl-ctrl-attrib {
+    display: none;
+  }
+
+  // Hide MapLibre logo
+  .maplibregl-ctrl-logo {
+    display: none;
+  }
+
+  // Ensure full viewport coverage
+  #root,
+  #map {
+    width: 100vw !important;
+    height: 100vh !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  // Hide any popups/tooltips that might appear
+  .maplibregl-popup {
+    display: none !important;
+  }
+
+  // Hide any remaining controls
+  .maplibregl-ctrl-group {
+    display: none !important;
+  }
+
+  // Ensure map fills entire space
+  .map-wrapper,
+  .map-container {
+    width: 100vw !important;
+    height: 100vh !important;
+    position: relative !important;
+  }
+
+  // Hide loading screen (should be hidden by React, but ensure it's not visible)
+  .loading-screen {
+    display: none !important;
+  }
+
+  // Prevent any scrolling
+  overflow: hidden;
+}
