@@ -47,6 +47,10 @@
   overscroll-behavior: none;
   -webkit-overflow-scrolling: touch;
   background-color: #e8eef5;
+
+  &.overscrolling {
+    touch-action: none;
+  }
 }
 
 // Search in view button

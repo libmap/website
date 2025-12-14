@@ -1,4 +1,4 @@
-import { useRef, useCallback, type ReactNode } from 'react'
+import { useRef, useCallback, useState, type ReactNode } from 'react'
 import { useStore } from '@/store'
 
 interface BottomSheetProps {
@@ -12,11 +12,13 @@ export function BottomSheet({ children }: BottomSheetProps) {
   const startY = useRef(0)
   const startHeight = useRef(0)
 
+  // State for overscroll-to-drag functionality
+  const [isOverscrolling, setIsOverscrolling] = useState(false)
+
   // Refs for overscroll-to-drag functionality
   const contentRef = useRef<HTMLDivElement>(null)
   const overscrollStartY = useRef(0)
   const overscrollStartHeight = useRef(0)
-  const isOverscrolling = useRef(false)
 
   const handleDragStart = useCallback(
     (e: React.PointerEvent) => {
@@ -61,13 +63,18 @@ export function BottomSheet({ children }: BottomSheetProps) {
       const content = contentRef.current
       if (!content || !e.touches[0]) return
 
-      // Check if at top of scroll
+      // Check if at top of scroll OR if content is not scrollable (short content)
       const isAtTop = content.scrollTop === 0
+      const isContentShort = content.scrollHeight <= content.clientHeight
 
-      if (isAtTop) {
+      if (isAtTop || isContentShort) {
+        // Prevent pull-to-refresh by stopping event propagation and preventing default
+        e.preventDefault()
+        e.stopPropagation()
+
         overscrollStartY.current = e.touches[0].clientY
         overscrollStartHeight.current = height
-        isOverscrolling.current = false
+        setIsOverscrolling(false)
       }
     },
     [height]
@@ -80,13 +87,14 @@ export function BottomSheet({ children }: BottomSheetProps) {
       if (!content || !touch) return
 
       const isAtTop = content.scrollTop === 0
+      const isContentShort = content.scrollHeight <= content.clientHeight
       const deltaY = touch.clientY - overscrollStartY.current
 
-      // Only handle if at top and scrolling up (positive deltaY means swiping down)
-      if (isAtTop && deltaY > 0) {
+      // Only handle if at top OR content is short, and scrolling up (positive deltaY means swiping down)
+      if ((isAtTop || isContentShort) && deltaY > 0) {
         // Prevent default scroll and pull-to-refresh
         e.preventDefault()
-        isOverscrolling.current = true
+        setIsOverscrolling(true)
 
         // Convert touch delta to vh percentage (same as drag handle logic)
         const deltaPercent = (deltaY / window.innerHeight) * 100
@@ -98,7 +106,7 @@ export function BottomSheet({ children }: BottomSheetProps) {
   )
 
   const handleContentTouchEnd = useCallback(() => {
-    if (isOverscrolling.current) {
+    if (isOverscrolling) {
       // Snap to preset heights (same logic as handleDragEnd)
       if (height < 20) {
         setHeight(10)
@@ -110,9 +118,9 @@ export function BottomSheet({ children }: BottomSheetProps) {
         setHeight(70)
       }
 
-      isOverscrolling.current = false
+      setIsOverscrolling(false)
     }
-  }, [height, setHeight])
+  }, [height, setHeight, isOverscrolling, setIsOverscrolling])
 
   const isMinimized = height <= 10
 
@@ -141,7 +149,7 @@ export function BottomSheet({ children }: BottomSheetProps) {
       {!isMinimized && (
         <div
           ref={contentRef}
-          className="bottom-sheet-content"
+          className={`bottom-sheet-content ${isOverscrolling ? 'overscrolling' : ''}`}
           onTouchStart={handleContentTouchStart}
           onTouchMove={handleContentTouchMove}
           onTouchEnd={handleContentTouchEnd}
