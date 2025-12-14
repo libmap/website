@@ -4,7 +4,6 @@ import { useStore } from '@/store'
 import { BASE_TILES, type BaseTileConfig } from '@/lib/layers'
 import {
   HomeButtonControl,
-  GlobeButtonControl,
   // MiniMapControl,
   GeocoderControl,
   ShareLinkControl,
@@ -34,7 +33,7 @@ export function MapControls() {
     draw?: any
     drawColorPicker?: any
     homeButton?: HomeButtonControl
-    globeButton?: GlobeButtonControl
+    globe?: maplibregl.GlobeControl
     shareLink?: ShareLinkControl
   }>({})
 
@@ -140,10 +139,10 @@ export function MapControls() {
     map.addControl(shareLink, 'bottom-right')
     controlsRef.current.shareLink = shareLink
 
-    // Globe button
-    const globeButton = new GlobeButtonControl()
-    map.addControl(globeButton, 'top-right')
-    controlsRef.current.globeButton = globeButton
+    // Globe control
+    const globeControl = new maplibregl.GlobeControl()
+    map.addControl(globeControl, 'top-right')
+    controlsRef.current.globe = globeControl
 
     // Cleanup
     return () => {
@@ -154,7 +153,7 @@ export function MapControls() {
       // if (controlsRef.current.minimap) map.removeControl(controlsRef.current.minimap)
       if (controlsRef.current.homeButton) map.removeControl(controlsRef.current.homeButton)
       if (controlsRef.current.shareLink) map.removeControl(controlsRef.current.shareLink)
-      if (controlsRef.current.globeButton) map.removeControl(controlsRef.current.globeButton)
+      if (controlsRef.current.globe) map.removeControl(controlsRef.current.globe)
       controlsRef.current = {}
     }
   }, [

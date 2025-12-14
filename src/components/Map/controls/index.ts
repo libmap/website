@@ -1,5 +1,4 @@
 export { HomeButtonControl } from './HomeButtonControl'
-export { GlobeButtonControl } from './GlobeButtonControl'
 export { MiniMapControl } from './MiniMapControl'
 export { GeocoderControl } from './GeocoderControl'
 export { DrawColorPicker } from './DrawColorPickerControl'
