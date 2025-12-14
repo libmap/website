@@ -151,7 +151,7 @@ export function TweetMarkers() {
           <time>${formatDateTime(tweet.createdAt)}</time>
           ${tweet.source ? `<span class="${getSourceBadgeClass(tweet.source)}">${getSourceDisplayText(tweet.source)}</span>` : ''}
         </div>
-        <button class="tweet-activate-btn" data-tweet-id="${tweet.id}">View Details</button>
+        <button class="tweet-activate-btn" data-tweet-id="${tweet.id}">🔍 View Details</button>
       </div>
     `
   }, [])
