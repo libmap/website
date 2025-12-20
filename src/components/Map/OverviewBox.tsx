@@ -1,9 +1,10 @@
-import { useMemo, useCallback, useEffect } from 'react'
+import { useMemo, useCallback, useEffect, useRef } from 'react'
 import { useStore } from '@/store'
 import { useTweets } from '@/hooks/useTweets'
 import { useUrlState } from '@/hooks/useUrlState'
 import { getTweetsOfStory } from '@/utils/stories'
 import { TeaserCard } from './TeaserCard'
+import { OverviewLayersPanel } from './OverviewLayersPanel'
 
 const ITEMS_PER_PAGE = 10
 
@@ -41,6 +42,26 @@ export function OverviewBox() {
     }
   }, [totalPages, currentPage, setCurrentPage])
 
+  // Scroll to top when page changes
+  useEffect(() => {
+    // Scroll the overview list
+    if (overviewListRef.current) {
+      overviewListRef.current.scrollTo({
+        top: 0,
+        behavior: 'smooth',
+      })
+    }
+
+    // Also scroll the bottom sheet content to top
+    const bottomSheetContent = document.querySelector('.bottom-sheet-content')
+    if (bottomSheetContent) {
+      bottomSheetContent.scrollTo({
+        top: 0,
+        behavior: 'smooth',
+      })
+    }
+  }, [currentPage])
+
   // Check if a head tweet has story replies
   const hasStoryReplies = (headTweetId: string): boolean => {
     const storyTweets = getTweetsOfStory(allTweets, headTweetId)
@@ -48,58 +69,86 @@ export function OverviewBox() {
   }
 
   const setVisibleLayers = useStore((state) => state.setVisibleLayers)
+  const overviewMode = useStore((state) => state.ui.overviewMode)
+  const setOverviewMode = useStore((state) => state.setOverviewMode)
 
-  const handleTeaserHover = useCallback((tweetId: string) => {
-    const tweet = allTweetsMap.get(tweetId)
-    if (!tweet || !map) return
+  // Ref for the overview list container
+  const overviewListRef = useRef<HTMLDivElement>(null)
 
-    // Set hover state for this tweet
-    hoverTweet(tweetId)
+  // Scroll to selected tweet when it changes
+  useEffect(() => {
+    if (selectedTweetId && overviewListRef.current) {
+      const selectedElement = overviewListRef.current.querySelector(
+        `[data-tweet-id="${selectedTweetId}"]`
+      ) as HTMLElement
 
-    // Clear any existing selection when hovering over a different card
-    if (selectedTweetId !== tweetId) {
-      selectTweetForHighlight(null)
+      if (selectedElement) {
+        selectedElement.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+          inline: 'nearest',
+        })
+      }
     }
+  }, [selectedTweetId])
 
-    // Set layers to satellite and tweets
-    setVisibleLayers(['satellite', 'tweets'])
+  const handleTeaserHover = useCallback(
+    (tweetId: string) => {
+      const tweet = allTweetsMap.get(tweetId)
+      if (!tweet || !map) return
 
-    // Pan to tweet location with overview zoom
-    map.flyTo({
-      center: [tweet.coordinates.lng, tweet.coordinates.lat],
-      zoom: 3,
-      duration: 1000,
-    })
-  }, [allTweetsMap, map, setVisibleLayers, selectedTweetId, selectTweetForHighlight, hoverTweet])
+      // Set hover state for this tweet
+      hoverTweet(tweetId)
 
-  const handleTeaserClick = useCallback((tweetId: string) => {
-    const tweet = allTweetsMap.get(tweetId)
-    if (!tweet || !map) return
+      // Clear any existing selection when hovering over a different card
+      if (selectedTweetId !== tweetId) {
+        selectTweetForHighlight(null)
+      }
 
-    // Set selection for this tweet
-    selectTweetForHighlight(tweetId)
+      // Set layers to satellite and tweets
+      setVisibleLayers(['satellite', 'tweets'])
 
-    // Save current state for back navigation
-    const center = map.getCenter()
-    setStateBefore({
-      center: { lat: center.lat, lng: center.lng },
-      zoom: map.getZoom(),
-    })
-
-    // Enter story view
-    enterStoryView(tweetId)
-
-    // Fly to the tweet's location
-    if (tweet.expandedUrl) {
-      applyViewFromUrl(tweet.expandedUrl, true)
-    } else {
+      // Pan to tweet location with overview zoom
       map.flyTo({
         center: [tweet.coordinates.lng, tweet.coordinates.lat],
-        zoom: Math.max(map.getZoom(), 12),
+        zoom: 3,
         duration: 1000,
       })
-    }
-  }, [allTweetsMap, map, setStateBefore, enterStoryView, applyViewFromUrl, selectTweetForHighlight])
+    },
+    [allTweetsMap, map, setVisibleLayers, selectedTweetId, selectTweetForHighlight, hoverTweet]
+  )
+
+  const handleTeaserClick = useCallback(
+    (tweetId: string) => {
+      const tweet = allTweetsMap.get(tweetId)
+      if (!tweet || !map) return
+
+      // Set selection for this tweet
+      selectTweetForHighlight(tweetId)
+
+      // Save current state for back navigation
+      const center = map.getCenter()
+      setStateBefore({
+        center: { lat: center.lat, lng: center.lng },
+        zoom: map.getZoom(),
+      })
+
+      // Enter story view
+      enterStoryView(tweetId)
+
+      // Fly to the tweet's location
+      if (tweet.expandedUrl) {
+        applyViewFromUrl(tweet.expandedUrl, true)
+      } else {
+        map.flyTo({
+          center: [tweet.coordinates.lng, tweet.coordinates.lat],
+          zoom: Math.max(map.getZoom(), 12),
+          duration: 1000,
+        })
+      }
+    },
+    [allTweetsMap, map, setStateBefore, enterStoryView, applyViewFromUrl, selectTweetForHighlight]
+  )
 
   if (isLoading) {
     return (
@@ -138,23 +187,46 @@ export function OverviewBox() {
     <div className="overview-box">
       <div className="overview-header">
         <span className="overview-count">{visibleTweets.length} messages</span>
+        <div className="overview-mode-toggle">
+          <button
+            type="button"
+            className={`mode-button ${overviewMode === 'messages' ? 'active' : ''}`}
+            onClick={() => setOverviewMode('messages')}
+            title="Show messages"
+            aria-label="Show messages"
+          >
+            📋
+          </button>
+          <button
+            type="button"
+            className={`mode-button ${overviewMode === 'layers' ? 'active' : ''}`}
+            onClick={() => setOverviewMode('layers')}
+            title="Show layers"
+            aria-label="Show layers"
+          >
+            🗺️
+          </button>
+        </div>
       </div>
-      <div className="overview-list">
-        {headTweets.map((tweet) => (
-          <TeaserCard
-            key={tweet.id}
-            tweet={tweet}
-            hasStory={hasStoryReplies(tweet.id)}
-            onClick={() => handleTeaserClick(tweet.id)}
-            onHover={() => handleTeaserHover(tweet.id)}
-
-            isActive={activeTweetId === tweet.id}
-            isHover={hoverTweetId === tweet.id}
-            isSelected={selectedTweetId === tweet.id}
-          />
-        ))}
+      <div className="overview-list" ref={overviewListRef}>
+        {overviewMode === 'messages' ? (
+          headTweets.map((tweet) => (
+            <TeaserCard
+              key={tweet.id}
+              tweet={tweet}
+              hasStory={hasStoryReplies(tweet.id)}
+              onClick={() => handleTeaserClick(tweet.id)}
+              onHover={() => handleTeaserHover(tweet.id)}
+              isActive={activeTweetId === tweet.id}
+              isHover={hoverTweetId === tweet.id}
+              isSelected={selectedTweetId === tweet.id}
+            />
+          ))
+        ) : (
+          <OverviewLayersPanel />
+        )}
       </div>
-      {totalPages > 1 && (
+      {overviewMode === 'messages' && totalPages > 1 && (
         <div className="overview-pagination">
           <button
             type="button"

@@ -74,12 +74,14 @@ interface AppState {
     isMobile: boolean
     isPreview: boolean
     closePopups: number // increment to trigger popup closing
+    overviewMode: 'messages' | 'layers' // overview box mode
   }
   setSidebarTab: (tab: 'messages' | 'layers') => void
   setBottomSheetHeight: (height: number) => void
   setIsMobile: (isMobile: boolean) => void
   setIsPreview: (isPreview: boolean) => void
   closeAllPopups: () => void
+  setOverviewMode: (mode: 'messages' | 'layers') => void
 
   // State restoration (for back navigation)
   stateBefore: {
@@ -263,6 +265,7 @@ export const useStore = create<AppState>()(
         isMobile: false,
         isPreview: false,
         closePopups: 0,
+        overviewMode: 'messages',
       },
       setSidebarTab: (sidebarTab) =>
         set((state) => ({
@@ -283,6 +286,10 @@ export const useStore = create<AppState>()(
       closeAllPopups: () =>
         set((state) => ({
           ui: { ...state.ui, closePopups: state.ui.closePopups + 1 },
+        })),
+      setOverviewMode: (overviewMode) =>
+        set((state) => ({
+          ui: { ...state.ui, overviewMode },
         })),
 
       // State restoration

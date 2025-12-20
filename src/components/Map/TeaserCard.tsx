@@ -11,18 +11,18 @@ interface TeaserCardProps {
 }
 
 function getSourceIcon(source?: string): string {
-  if (!source) return ''
+  if (!source) return '💬'
 
   switch (source.toLowerCase()) {
     case 'twitter':
     case 'x':
-      return '𝕏'
+      return '𝕏💬'
     case 'mastodon.social':
       return '🐘'
     case 'bluesky':
       return '🦋'
     default:
-      return ''
+      return '💬'
   }
 }
 
@@ -33,7 +33,15 @@ function truncateText(text: string, maxLength: number): string {
   return plainText.slice(0, maxLength).trim() + '...'
 }
 
-export function TeaserCard({ tweet, hasStory, onClick, onHover, isActive, isHover, isSelected }: TeaserCardProps) {
+export function TeaserCard({
+  tweet,
+  hasStory,
+  onClick,
+  onHover,
+  isActive,
+  isHover,
+  isSelected,
+}: TeaserCardProps) {
   const sourceIcon = getSourceIcon(tweet.source)
   const teaserText = truncateText(tweet.text, 50)
 
@@ -41,10 +49,10 @@ export function TeaserCard({ tweet, hasStory, onClick, onHover, isActive, isHove
   const formatDate = (dateString: string): string => {
     try {
       const date = new Date(dateString)
-      return date.toLocaleDateString('en-US', { 
-        month: 'short', 
-        day: 'numeric', 
-        year: 'numeric' 
+      return date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
       })
     } catch (error) {
       console.error('Error formatting date:', error)
@@ -57,9 +65,9 @@ export function TeaserCard({ tweet, hasStory, onClick, onHover, isActive, isHove
   return (
     <div
       className={`teaser-card ${isActive ? 'active' : ''} ${isHover ? 'hover' : ''} ${isSelected ? 'selected' : ''}`}
+      data-tweet-id={tweet.id}
       onClick={onClick}
       onMouseEnter={onHover}
-
       onTouchStart={onHover}
       onFocus={onHover}
       role="button"
@@ -75,12 +83,18 @@ export function TeaserCard({ tweet, hasStory, onClick, onHover, isActive, isHove
         <div className="teaser-author-info">
           <span className="teaser-handle">@{tweet.authorHandle}</span>
           {formattedDate && <span className="teaser-date">{formattedDate}</span>}
-          {hasStory && <span className="story-badge" title="Story thread">📖</span>}
+          {hasStory ? (
+            <span className="story-badge" title="Story thread">
+              📖
+            </span>
+          ) : (
+            <span className="story-badge-placeholder" aria-hidden="true"></span>
+          )}
         </div>
         <span className="teaser-text">{teaserText}</span>
       </div>
       <div className="teaser-badges">
-        {sourceIcon && <span className="source-icon">{sourceIcon}</span>}
+        <span className="source-icon">{sourceIcon}</span>
       </div>
     </div>
   )
