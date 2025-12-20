@@ -12,6 +12,10 @@ export function OverviewBox() {
   const { applyViewFromUrl } = useUrlState()
   const enterStoryView = useStore((state) => state.enterStoryView)
   const activeTweetId = useStore((state) => state.tweets.activeTweetId)
+  const hoverTweetId = useStore((state) => state.tweets.hoverTweetId)
+  const selectedTweetId = useStore((state) => state.tweets.selectedTweetId)
+  const selectTweetForHighlight = useStore((state) => state.selectTweetForHighlight)
+  const hoverTweet = useStore((state) => state.hoverTweet)
   const allTweetsMap = useStore((state) => state.tweets.data)
   const map = useStore((state) => state.map.instance)
   const setStateBefore = useStore((state) => state.setStateBefore)
@@ -49,6 +53,14 @@ export function OverviewBox() {
     const tweet = allTweetsMap.get(tweetId)
     if (!tweet || !map) return
 
+    // Set hover state for this tweet
+    hoverTweet(tweetId)
+
+    // Clear any existing selection when hovering over a different card
+    if (selectedTweetId !== tweetId) {
+      selectTweetForHighlight(null)
+    }
+
     // Set layers to satellite and tweets
     setVisibleLayers(['satellite', 'tweets'])
 
@@ -58,11 +70,14 @@ export function OverviewBox() {
       zoom: 3,
       duration: 1000,
     })
-  }, [allTweetsMap, map, setVisibleLayers])
+  }, [allTweetsMap, map, setVisibleLayers, selectedTweetId, selectTweetForHighlight, hoverTweet])
 
   const handleTeaserClick = useCallback((tweetId: string) => {
     const tweet = allTweetsMap.get(tweetId)
     if (!tweet || !map) return
+
+    // Set selection for this tweet
+    selectTweetForHighlight(tweetId)
 
     // Save current state for back navigation
     const center = map.getCenter()
@@ -84,7 +99,7 @@ export function OverviewBox() {
         duration: 1000,
       })
     }
-  }, [allTweetsMap, map, setStateBefore, enterStoryView, applyViewFromUrl])
+  }, [allTweetsMap, map, setStateBefore, enterStoryView, applyViewFromUrl, selectTweetForHighlight])
 
   if (isLoading) {
     return (
@@ -132,7 +147,10 @@ export function OverviewBox() {
             hasStory={hasStoryReplies(tweet.id)}
             onClick={() => handleTeaserClick(tweet.id)}
             onHover={() => handleTeaserHover(tweet.id)}
+
             isActive={activeTweetId === tweet.id}
+            isHover={hoverTweetId === tweet.id}
+            isSelected={selectedTweetId === tweet.id}
           />
         ))}
       </div>

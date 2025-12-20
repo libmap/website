@@ -66,6 +66,29 @@
     border-left: 3px solid var(--color-primary);
     padding-left: 9px;
   }
+
+  &.hover {
+    background: var(--color-primary);
+    color: white;
+    border-left: 3px solid var(--color-primary-dark);
+    padding-left: 9px;
+    
+    .teaser-handle,
+    .teaser-text {
+      color: white;
+    }
+  }
+
+  &.selected {
+    background: rgba(59, 130, 246, 0.2);
+    border-left: 3px solid var(--color-primary);
+    padding-left: 9px;
+    
+    .teaser-handle,
+    .teaser-text {
+      color: var(--color-text);
+    }
+  }
 }
 
 .teaser-content {

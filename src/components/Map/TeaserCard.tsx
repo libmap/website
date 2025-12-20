@@ -6,6 +6,8 @@ interface TeaserCardProps {
   onClick: () => void
   onHover?: () => void
   isActive?: boolean
+  isHover?: boolean
+  isSelected?: boolean
 }
 
 function getSourceIcon(source?: string): string {
@@ -31,15 +33,16 @@ function truncateText(text: string, maxLength: number): string {
   return plainText.slice(0, maxLength).trim() + '...'
 }
 
-export function TeaserCard({ tweet, hasStory, onClick, onHover, isActive }: TeaserCardProps) {
+export function TeaserCard({ tweet, hasStory, onClick, onHover, isActive, isHover, isSelected }: TeaserCardProps) {
   const sourceIcon = getSourceIcon(tweet.source)
   const teaserText = truncateText(tweet.text, 50)
 
   return (
     <div
-      className={`teaser-card ${isActive ? 'active' : ''}`}
+      className={`teaser-card ${isActive ? 'active' : ''} ${isHover ? 'hover' : ''} ${isSelected ? 'selected' : ''}`}
       onClick={onClick}
       onMouseEnter={onHover}
+
       onTouchStart={onHover}
       onFocus={onHover}
       role="button"

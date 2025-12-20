@@ -3,7 +3,7 @@ import maplibregl from 'maplibre-gl'
 import { useStore } from '@/store'
 import { useTweets } from '@/hooks/useTweets'
 import { useUrlState } from '@/hooks/useUrlState'
-import { getTweetsOfStory } from '@/utils/stories'
+import { getTweetsOfStory, getHeadTweetById } from '@/utils/stories'
 import type { Tweet } from '@/types'
 
 // Helper function to format date as YYYY-MM-DD HH:MM
@@ -55,6 +55,7 @@ function createMarkerElement(type: Tweet['type']): HTMLElement {
 
   const el = document.createElement('div')
   el.className = 'tweet-marker'
+  el.style.cursor = 'pointer' // Change cursor to pointer on hover
   el.innerHTML = `
     <div class="tweet-marker-pin" style="background-color: ${color}">
       <div class="tweet-marker-inner"></div>
@@ -145,33 +146,78 @@ export function TweetMarkers() {
     `
   }, [])
 
-  // Handle marker click - enter story view
-  const handleMarkerClick = useCallback(
-    (tweet: Tweet) => {
-      if (!map) return
+  const setVisibleLayers = useStore((state) => state.setVisibleLayers)
+  const hoverTweet = useStore((state) => state.hoverTweet)
+  const selectTweetForHighlight = useStore((state) => state.selectTweetForHighlight)
 
-      // Save current state for back navigation
-      const center = map.getCenter()
-      setStateBefore({
-        center: { lat: center.lat, lng: center.lng },
-        zoom: map.getZoom(),
+
+
+  // Handle marker click - focus map and open popup (like hover behavior)
+  const handleMarkerClick = useCallback(
+    (tweet: Tweet, marker?: maplibregl.Marker) => {
+      console.log(`Marker clicked for tweet ${tweet.id}`)
+      if (!map) {
+        console.log('No map instance available')
+        return
+      }
+
+      // Set layers to satellite and tweets (like hover behavior)
+      setVisibleLayers(['satellite', 'tweets'])
+
+      // Pan to tweet location with overview zoom (like hover behavior)
+      map.flyTo({
+        center: [tweet.coordinates.lng, tweet.coordinates.lat],
+        zoom: 3,
+        duration: 1000,
       })
 
-      // Enter story view for this tweet
-      enterStoryView(tweet.id)
-
-      // Fly to the tweet's location
-      if (tweet.expandedUrl) {
-        applyViewFromUrl(tweet.expandedUrl, true)
-      } else {
-        map.flyTo({
-          center: [tweet.coordinates.lng, tweet.coordinates.lat],
-          zoom: Math.max(map.getZoom(), 12),
-          duration: 1000,
-        })
+      // Close any other open popups first
+      console.log(`Closing other popups, total popups: ${popupsRef.current.size}`)
+      for (const [id, otherPopup] of popupsRef.current.entries()) {
+        if (id !== tweet.id && otherPopup.isOpen()) {
+          console.log(`Closing popup for tweet ${id}`)
+          otherPopup.remove()
+        }
       }
+      
+      // Set selection for this tweet after closing other popups
+      const tweetIdToHighlight = getHeadTweetById(tweet.id, allTweetsMap) || tweet.id
+      selectTweetForHighlight(tweetIdToHighlight)
+      
+      // Let Maplibre handle the popup opening automatically
+      // The popup should open when the marker element is clicked
+      // If it doesn't, we'll try to manually open it as a fallback
+      setTimeout(() => {
+        const targetMarker = marker || markersRef.current.get(tweet.id)
+        console.log(`Target marker found: ${!!targetMarker}`)
+        if (targetMarker) {
+          const popup = targetMarker.getPopup()
+          console.log(`Popup found: ${!!popup}`)
+          if (popup && !popup.isOpen()) {
+            console.log(`Manually opening popup for tweet ${tweet.id}`)
+            popup.setLngLat([tweet.coordinates.lng, tweet.coordinates.lat])
+            popup.addTo(map)
+            
+            // Check if the popup was actually added
+            setTimeout(() => {
+              console.log(`Popup is open: ${popup.isOpen()}`)
+              if (popup.isOpen()) {
+                console.log('Popup successfully opened')
+                const popupElement = popup.getElement()
+                console.log(`Popup element: ${popupElement}`)
+                if (popupElement) {
+                  console.log(`Popup element style: ${popupElement.style.display}`)
+                  console.log(`Popup element content: ${popupElement.innerHTML}`)
+                }
+              } else {
+                console.log('Popup failed to open')
+              }
+            }, 100)
+          }
+        }
+      }, 200)
     },
-    [map, setStateBefore, enterStoryView, applyViewFromUrl]
+    [map, setVisibleLayers, popupsRef, selectTweetForHighlight, getHeadTweetById]
   )
 
   // Handle full activation from popup button
@@ -246,8 +292,21 @@ export function TweetMarkers() {
           .setPopup(popup)
           .addTo(map)
 
-        // Handle marker click
-        el.addEventListener('click', () => handleMarkerClick(tweet))
+        // Handle marker hover - highlight corresponding teaser card
+        // For story tweets, highlight the head tweet; for regular tweets, highlight the tweet itself
+        el.addEventListener('mouseenter', () => {
+          const tweetIdToHighlight = getHeadTweetById(tweet.id, allTweetsMap) || tweet.id
+          hoverTweet(tweetIdToHighlight)
+        })
+        
+        el.addEventListener('mouseleave', () => {
+          hoverTweet(null)
+        })
+        
+        // Handle marker click - focus map, open popup, and set persistent highlight
+        el.addEventListener('click', () => {
+          handleMarkerClick(tweet, marker)
+        })
 
         // Add event listener to popup button when popup opens
         popup.on('open', () => {
@@ -265,9 +324,32 @@ export function TweetMarkers() {
             }
           })
         })
+        
+        // Clear selection when this popup closes
+        popup.on('close', () => {
+          // Use a small delay to allow any new selection to be set first
+          // (in case we're clicking a new marker)
+          setTimeout(() => {
+            // Only clear if no other popups are open
+            let anyPopupOpen = false
+            for (const [id, otherPopup] of popupsRef.current.entries()) {
+              if (id !== tweet.id && otherPopup.isOpen()) {
+                anyPopupOpen = true
+                break
+              }
+            }
+            
+            if (!anyPopupOpen) {
+              selectTweetForHighlight(null)
+            }
+          }, 100)
+        })
 
         currentMarkers.set(tweet.id, marker)
         currentPopups.set(tweet.id, popup)
+        
+        // Debug: log that marker and popup were created
+        console.log(`Created marker and popup for tweet ${tweet.id}`)
       }
     }
   }, [
@@ -277,6 +359,9 @@ export function TweetMarkers() {
     createPopupContent,
     handleMarkerClick,
     handleTweetActivation,
+    hoverTweet,
+    selectTweetForHighlight,
+    getHeadTweetById,
   ])
 
   // Update visible tweets when map moves
@@ -316,6 +401,8 @@ export function TweetMarkers() {
       }
     }
   }, [activeTweetId, map])
+
+
 
   // Close all popups when requested
   useEffect(() => {

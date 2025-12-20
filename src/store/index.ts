@@ -37,6 +37,8 @@ interface AppState {
     visibleIds: string[]
     activeTweetId: string | null
     activeStoryId: string | null
+    hoverTweetId: string | null
+    selectedTweetId: string | null
     scrollToTweetId: string | null
     filters: TweetFilters
     filterByBounds: boolean
@@ -53,6 +55,8 @@ interface AppState {
   setVisibleTweetIds: (ids: string[]) => void
   selectTweet: (id: string | null) => void
   selectStory: (id: string | null) => void
+  hoverTweet: (id: string | null) => void
+  selectTweetForHighlight: (id: string | null) => void
   scrollToTweet: (id: string | null) => void
   setFilter: (type: keyof TweetFilters, value: string | null) => void
   setFilterByBounds: (value: boolean, frozenBounds?: LngLatBounds | null) => void
@@ -143,6 +147,8 @@ export const useStore = create<AppState>()(
         visibleIds: [],
         activeTweetId: null,
         activeStoryId: null,
+        hoverTweetId: null,
+        selectedTweetId: null,
         scrollToTweetId: null,
         filters: {
           account: null,
@@ -182,6 +188,14 @@ export const useStore = create<AppState>()(
       selectStory: (activeStoryId) =>
         set((state) => ({
           tweets: { ...state.tweets, activeStoryId },
+        })),
+      hoverTweet: (hoverTweetId) =>
+        set((state) => ({
+          tweets: { ...state.tweets, hoverTweetId },
+        })),
+      selectTweetForHighlight: (selectedTweetId) =>
+        set((state) => ({
+          tweets: { ...state.tweets, selectedTweetId },
         })),
       scrollToTweet: (scrollToTweetId) =>
         set((state) => ({
