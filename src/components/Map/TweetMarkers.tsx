@@ -3,7 +3,7 @@ import maplibregl from 'maplibre-gl'
 import { useStore } from '@/store'
 import { useTweets } from '@/hooks/useTweets'
 import { useUrlState } from '@/hooks/useUrlState'
-import { getTweetsOfStory, getHeadTweetById } from '@/utils/stories'
+import { getTweetsOfStory } from '@/utils/stories'
 import type { Tweet } from '@/types'
 
 // Helper function to format date as YYYY-MM-DD HH:MM
@@ -66,13 +66,13 @@ function createMarkerElement(type: Tweet['type']): HTMLElement {
 export function TweetMarkers() {
   const map = useStore((state) => state.map.instance)
   const visibleLayers = useStore((state) => state.layers.visible)
-  const selectTweet = useStore((state) => state.selectTweet)
-  const scrollToTweet = useStore((state) => state.scrollToTweet)
   const activeTweetId = useStore((state) => state.tweets.activeTweetId)
   const setStateBefore = useStore((state) => state.setStateBefore)
-  const pagination = useStore((state) => state.tweets.pagination)
   const allTweetsMap = useStore((state) => state.tweets.data)
   const closePopups = useStore((state) => state.ui.closePopups)
+  const viewMode = useStore((state) => state.tweets.viewMode)
+  const enterStoryView = useStore((state) => state.enterStoryView)
+  const overviewPage = useStore((state) => state.tweets.overviewPage)
 
   const { tweets: allTweets, visibleTweets, isLoading, updateVisibleTweets } = useTweets()
   const { applyViewFromUrl } = useUrlState()
@@ -82,36 +82,24 @@ export function TweetMarkers() {
 
   const isTweetsVisible = visibleLayers.includes('tweets')
 
-  // Calculate which page a tweet (or its head tweet) should be on
-  const calculatePageForTweet = useCallback(
-    (tweetId: string): number => {
-      // Get the head tweet ID for this tweet
-      const headTweetId = getHeadTweetById(tweetId, allTweetsMap)
-      if (!headTweetId) return 1
-
-      // Find the index of the head tweet in visibleTweets
-      const headTweetIndex = visibleTweets.findIndex((t) => t.id === headTweetId)
-      if (headTweetIndex === -1) return 1
-
-      // Calculate which page this tweet is on
-      const pageNumber = Math.floor(headTweetIndex / pagination.perPage) + 1
-      return pageNumber
-    },
-    [visibleTweets, allTweetsMap, pagination.perPage]
-  )
-
-  // Filter tweets to only show those in current sidebar page
-  // Include both head tweets AND their story tweets
+  // Filter tweets to show based on viewMode
+  const ITEMS_PER_PAGE = 10
   const tweetsToShow = useMemo(() => {
-    // Apply pagination to visible tweets (which are head tweets only)
-    const start = (pagination.currentPage - 1) * pagination.perPage
-    const end = start + pagination.perPage
-    const paginatedHeadTweets = visibleTweets.slice(start, end)
+    // In story mode, only show the active tweet's marker
+    if (viewMode === 'story' && activeTweetId) {
+      const activeTweet = allTweetsMap.get(activeTweetId)
+      return activeTweet ? [activeTweet] : []
+    }
 
-    // Also include all story tweets for these head tweets
+    // In overview mode, show head tweets for the current page
+    const start = (overviewPage - 1) * ITEMS_PER_PAGE
+    const end = start + ITEMS_PER_PAGE
+    const headTweetsToShow = visibleTweets.slice(start, end)
+
+    // Also include all story tweets for these head tweets (for map marker display)
     const allTweetsToShow: Tweet[] = []
 
-    paginatedHeadTweets.forEach((headTweet) => {
+    headTweetsToShow.forEach((headTweet) => {
       // Add the head tweet
       allTweetsToShow.push(headTweet)
 
@@ -121,7 +109,7 @@ export function TweetMarkers() {
     })
 
     return allTweetsToShow
-  }, [visibleTweets, pagination.currentPage, pagination.perPage, allTweets])
+  }, [viewMode, activeTweetId, allTweetsMap, visibleTweets, allTweets, overviewPage])
 
   // Create popup content for a tweet
   const createPopupContent = useCallback((tweet: Tweet): string => {
@@ -157,44 +145,49 @@ export function TweetMarkers() {
     `
   }, [])
 
-  // Handle marker click - only scroll to tweet in sidebar, no activation
+  // Handle marker click - enter story view
   const handleMarkerClick = useCallback(
-    (tweet: Tweet) => {
-      // Calculate which page this tweet should be on
-      const tweetPage = calculatePageForTweet(tweet.id)
-
-      // Navigate to the correct page if needed
-      if (tweetPage !== pagination.currentPage) {
-        const setPage = useStore.getState().setPage
-        setPage(tweetPage)
-      }
-
-      // Scroll to the tweet in the sidebar without activating it
-      // Use a small delay to allow page change to render
-      setTimeout(() => {
-        scrollToTweet(tweet.id)
-      }, 100)
-    },
-    [scrollToTweet, calculatePageForTweet, pagination.currentPage]
-  )
-
-  // Handle full activation - matches sidebar behavior exactly
-  const handleTweetActivation = useCallback(
     (tweet: Tweet) => {
       if (!map) return
 
-      // Calculate which page this tweet should be on
-      const tweetPage = calculatePageForTweet(tweet.id)
-
-      // Save current state for back navigation (including calculated page)
+      // Save current state for back navigation
       const center = map.getCenter()
       setStateBefore({
         center: { lat: center.lat, lng: center.lng },
         zoom: map.getZoom(),
-        page: tweetPage,
       })
 
-      selectTweet(tweet.id)
+      // Enter story view for this tweet
+      enterStoryView(tweet.id)
+
+      // Fly to the tweet's location
+      if (tweet.expandedUrl) {
+        applyViewFromUrl(tweet.expandedUrl, true)
+      } else {
+        map.flyTo({
+          center: [tweet.coordinates.lng, tweet.coordinates.lat],
+          zoom: Math.max(map.getZoom(), 12),
+          duration: 1000,
+        })
+      }
+    },
+    [map, setStateBefore, enterStoryView, applyViewFromUrl]
+  )
+
+  // Handle full activation from popup button
+  const handleTweetActivation = useCallback(
+    (tweet: Tweet) => {
+      if (!map) return
+
+      // Save current state for back navigation
+      const center = map.getCenter()
+      setStateBefore({
+        center: { lat: center.lat, lng: center.lng },
+        zoom: map.getZoom(),
+      })
+
+      // Enter story view for this tweet
+      enterStoryView(tweet.id)
 
       // Apply the view from the tweet's URL (layers, zoom, location)
       if (tweet.expandedUrl) {
@@ -208,7 +201,7 @@ export function TweetMarkers() {
         })
       }
     },
-    [map, setStateBefore, selectTweet, applyViewFromUrl, calculatePageForTweet]
+    [map, setStateBefore, enterStoryView, applyViewFromUrl]
   )
 
   // Create/update markers when tweets change

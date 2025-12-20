@@ -45,6 +45,9 @@ interface AppState {
       currentPage: number
       perPage: number
     }
+    viewMode: 'overview' | 'story'
+    currentStoryIndex: number
+    overviewPage: number
   }
   setTweets: (tweets: Tweet[]) => void
   setVisibleTweetIds: (ids: string[]) => void
@@ -54,6 +57,11 @@ interface AppState {
   setFilter: (type: keyof TweetFilters, value: string | null) => void
   setFilterByBounds: (value: boolean, frozenBounds?: LngLatBounds | null) => void
   setPage: (page: number) => void
+  setViewMode: (mode: 'overview' | 'story') => void
+  setStoryIndex: (index: number) => void
+  setOverviewPage: (page: number) => void
+  enterStoryView: (tweetId: string) => void
+  exitStoryView: () => void
 
   // UI state
   ui: {
@@ -146,6 +154,9 @@ export const useStore = create<AppState>()(
           currentPage: 1,
           perPage: 10,
         },
+        viewMode: 'overview',
+        currentStoryIndex: 0,
+        overviewPage: 1,
       },
       setTweets: (tweets) =>
         set((state) => {
@@ -199,6 +210,36 @@ export const useStore = create<AppState>()(
             ...state.tweets,
             pagination: { ...state.tweets.pagination, currentPage: page },
           },
+        })),
+      setViewMode: (viewMode) =>
+        set((state) => ({
+          tweets: { ...state.tweets, viewMode },
+        })),
+      setStoryIndex: (currentStoryIndex) =>
+        set((state) => ({
+          tweets: { ...state.tweets, currentStoryIndex },
+        })),
+      enterStoryView: (tweetId) =>
+        set((state) => ({
+          tweets: {
+            ...state.tweets,
+            activeTweetId: tweetId,
+            viewMode: 'story',
+            currentStoryIndex: 0,
+          },
+        })),
+      exitStoryView: () =>
+        set((state) => ({
+          tweets: {
+            ...state.tweets,
+            activeTweetId: null,
+            viewMode: 'overview',
+            currentStoryIndex: 0,
+          },
+        })),
+      setOverviewPage: (overviewPage) =>
+        set((state) => ({
+          tweets: { ...state.tweets, overviewPage },
         })),
 
       // UI state

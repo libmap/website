@@ -7,6 +7,8 @@ import { PreviewControls } from './PreviewControls'
 import { LayerManager } from './LayerManager'
 import { TweetMarkers } from './TweetMarkers'
 import { SearchInViewButton } from './SearchInViewButton'
+import { OverviewBox } from './OverviewBox'
+import { StoryViewer } from '../Sidebar/MessagesPanel/StoryViewer'
 
 import 'maplibre-gl/dist/maplibre-gl.css'
 
@@ -18,7 +20,13 @@ export function MapContainer() {
   const isMobile = useStore((state) => state.ui.isMobile)
   const isPreview = useStore((state) => state.ui.isPreview)
   const bottomSheetHeight = useStore((state) => state.ui.bottomSheetHeight)
+  const viewMode = useStore((state) => state.tweets.viewMode)
+  const mapZoom = useStore((state) => state.map.zoom)
   const [lastSnappedHeight, setLastSnappedHeight] = useState(50)
+
+  // Show floating panel on desktop (overview box or story viewer)
+  const showOverviewBox = !isMobile && viewMode === 'overview' && mapZoom <= 12
+  const showStoryViewer = !isMobile && viewMode === 'story'
 
   // Initialize map once on mount
   useEffect(() => {
@@ -164,6 +172,12 @@ export function MapContainer() {
           <LayerManager />
           <TweetMarkers />
           {!isPreview && <SearchInViewButton />}
+          {showOverviewBox && <OverviewBox />}
+          {showStoryViewer && (
+            <div className="overview-box story-mode">
+              <StoryViewer />
+            </div>
+          )}
         </>
       )}
     </div>

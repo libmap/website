@@ -1,4 +1,4 @@
-import { useRef, useCallback, useState, type ReactNode } from 'react'
+import { useRef, useCallback, useState, useEffect, type ReactNode } from 'react'
 import { useStore } from '@/store'
 
 interface BottomSheetProps {
@@ -8,6 +8,7 @@ interface BottomSheetProps {
 export function BottomSheet({ children }: BottomSheetProps) {
   const height = useStore((state) => state.ui.bottomSheetHeight)
   const setHeight = useStore((state) => state.setBottomSheetHeight)
+  const viewMode = useStore((state) => state.tweets.viewMode)
   const isDragging = useRef(false)
   const startY = useRef(0)
   const startHeight = useRef(0)
@@ -121,6 +122,13 @@ export function BottomSheet({ children }: BottomSheetProps) {
       setIsOverscrolling(false)
     }
   }, [height, setHeight, isOverscrolling, setIsOverscrolling])
+
+  // Auto-expand to minimum 50% when entering story mode
+  useEffect(() => {
+    if (viewMode === 'story' && height < 50) {
+      setHeight(50)
+    }
+  }, [viewMode, height, setHeight])
 
   const isMinimized = height <= 10
 
