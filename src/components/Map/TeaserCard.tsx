@@ -37,6 +37,23 @@ export function TeaserCard({ tweet, hasStory, onClick, onHover, isActive, isHove
   const sourceIcon = getSourceIcon(tweet.source)
   const teaserText = truncateText(tweet.text, 50)
 
+  // Format the date (e.g., "2023-01-15" -> "Jan 15, 2023")
+  const formatDate = (dateString: string): string => {
+    try {
+      const date = new Date(dateString)
+      return date.toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric', 
+        year: 'numeric' 
+      })
+    } catch (error) {
+      console.error('Error formatting date:', error)
+      return ''
+    }
+  }
+
+  const formattedDate = formatDate(tweet.createdAt)
+
   return (
     <div
       className={`teaser-card ${isActive ? 'active' : ''} ${isHover ? 'hover' : ''} ${isSelected ? 'selected' : ''}`}
@@ -55,11 +72,14 @@ export function TeaserCard({ tweet, hasStory, onClick, onHover, isActive, isHove
       }}
     >
       <div className="teaser-content">
-        <span className="teaser-handle">@{tweet.authorHandle}</span>
+        <div className="teaser-author-info">
+          <span className="teaser-handle">@{tweet.authorHandle}</span>
+          {formattedDate && <span className="teaser-date">{formattedDate}</span>}
+          {hasStory && <span className="story-badge" title="Story thread">📖</span>}
+        </div>
         <span className="teaser-text">{teaserText}</span>
       </div>
       <div className="teaser-badges">
-        {hasStory && <span className="story-badge" title="Story thread">📖</span>}
         {sourceIcon && <span className="source-icon">{sourceIcon}</span>}
       </div>
     </div>
