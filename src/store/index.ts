@@ -71,6 +71,7 @@ interface AppState {
   ui: {
     sidebarTab: 'messages' | 'layers'
     bottomSheetHeight: number // percentage of viewport height
+    storyContentHeight: number | null // content height in story mode (vh)
     isMobile: boolean
     isPreview: boolean
     closePopups: number // increment to trigger popup closing
@@ -78,6 +79,7 @@ interface AppState {
   }
   setSidebarTab: (tab: 'messages' | 'layers') => void
   setBottomSheetHeight: (height: number) => void
+  setStoryContentHeight: (height: number | null) => void
   setIsMobile: (isMobile: boolean) => void
   setIsPreview: (isPreview: boolean) => void
   closeAllPopups: () => void
@@ -262,6 +264,7 @@ export const useStore = create<AppState>()(
       ui: {
         sidebarTab: 'messages',
         bottomSheetHeight: 50,
+        storyContentHeight: null,
         isMobile: false,
         isPreview: false,
         closePopups: 0,
@@ -274,6 +277,10 @@ export const useStore = create<AppState>()(
       setBottomSheetHeight: (bottomSheetHeight) =>
         set((state) => ({
           ui: { ...state.ui, bottomSheetHeight },
+        })),
+      setStoryContentHeight: (storyContentHeight) =>
+        set((state) => ({
+          ui: { ...state.ui, storyContentHeight },
         })),
       setIsMobile: (isMobile) =>
         set((state) => ({

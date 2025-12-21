@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useMap } from '@/hooks/useMap'
 import { useUrlState } from '@/hooks/useUrlState'
 import { useStore } from '@/store'
+import { useBottomSheetSnap, getSnapHeights, isHeightSnapped } from '@/hooks/useBottomSheetSnap'
 import { MapControls } from './MapControls'
 import { PreviewControls } from './PreviewControls'
 import { LayerManager } from './LayerManager'
@@ -21,6 +22,7 @@ export function MapContainer() {
   const isPreview = useStore((state) => state.ui.isPreview)
   const bottomSheetHeight = useStore((state) => state.ui.bottomSheetHeight)
   const viewMode = useStore((state) => state.tweets.viewMode)
+  const { isSnapped } = useBottomSheetSnap()
   const [lastSnappedHeight, setLastSnappedHeight] = useState(50)
 
   // Show floating panel on desktop (overview box or story viewer)
@@ -66,16 +68,14 @@ export function MapContainer() {
 
   // Adjust map padding when BottomSheet height changes (mobile only)
   useEffect(() => {
-    const snappedHeights = [10, 30, 50, 70]
-
     const unsubscribe = useStore.subscribe(
-      (state) => state.ui,
-      (ui, prevUi) => {
+      (state) => ({ ui: state.ui, viewMode: state.tweets.viewMode }),
+      ({ ui, viewMode }, prev) => {
         const mapInstance = useStore.getState().map.instance
         if (!mapInstance) return
 
         // Handle mobile -> desktop transition: remove padding
-        if (!ui.isMobile && prevUi.isMobile) {
+        if (!ui.isMobile && prev.ui.isMobile) {
           mapInstance.setPadding({ top: 0, bottom: 0, left: 0, right: 0 })
           return
         }
@@ -83,14 +83,15 @@ export function MapContainer() {
         // Only adjust padding on mobile
         if (!ui.isMobile) return
 
-        // Only update if height is at a snapped value (after handleDragEnd)
-        const isSnapped = snappedHeights.includes(ui.bottomSheetHeight)
+        // Get snap heights based on current view mode
+        const currentSnapHeights = getSnapHeights(viewMode, ui.storyContentHeight)
+        const isSnapped = isHeightSnapped(ui.bottomSheetHeight, currentSnapHeights)
 
         // Handle height change or desktop -> mobile transition
         if (
           isSnapped &&
-          (ui.bottomSheetHeight !== prevUi.bottomSheetHeight ||
-            (!prevUi.isMobile && ui.isMobile))
+          (ui.bottomSheetHeight !== prev.ui.bottomSheetHeight ||
+            (!prev.ui.isMobile && ui.isMobile))
         ) {
           const bottomPaddingPx = (ui.bottomSheetHeight / 100) * window.innerHeight
 
@@ -102,7 +103,10 @@ export function MapContainer() {
       },
       {
         equalityFn: (a, b) =>
-          a.bottomSheetHeight === b.bottomSheetHeight && a.isMobile === b.isMobile,
+          a.ui.bottomSheetHeight === b.ui.bottomSheetHeight &&
+          a.ui.isMobile === b.ui.isMobile &&
+          a.ui.storyContentHeight === b.ui.storyContentHeight &&
+          a.viewMode === b.viewMode,
       }
     )
 
@@ -130,20 +134,14 @@ export function MapContainer() {
   useEffect(() => {
     if (!mapInstance || !isMobile) return
 
-    const snappedHeights = [10, 30, 50, 70]
-    const isSnapped = snappedHeights.includes(bottomSheetHeight)
-
     // Only apply if at a snapped height (should be 50 on initial load)
     if (isSnapped) {
       const bottomPaddingPx = (bottomSheetHeight / 100) * window.innerHeight
       mapInstance.setPadding({ top: 0, bottom: bottomPaddingPx, left: 0, right: 0 })
     }
-  }, [mapInstance, isMobile])
+  }, [mapInstance, isMobile, isSnapped, bottomSheetHeight])
 
   // Track last snapped height to avoid crosshair moving during drag
-  const snappedHeights = [10, 30, 50, 70]
-  const isSnapped = snappedHeights.includes(bottomSheetHeight)
-
   useEffect(() => {
     if (isSnapped) {
       setLastSnappedHeight(bottomSheetHeight)

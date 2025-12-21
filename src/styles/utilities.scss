@@ -21,6 +21,19 @@
     box-shadow: none;
     pointer-events: none;
   }
+
+  // In story mode, content is hidden by default until ready
+  &.story-mode .bottom-sheet-content {
+    opacity: 0;
+    visibility: hidden;
+  }
+
+  // Show content when ready (content-ready class added)
+  &.story-mode.content-ready .bottom-sheet-content {
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 0.2s ease-out;
+  }
 }
 
 .drag-handle {
@@ -42,6 +55,33 @@
     height: 4px;
     background: var(--color-border);
     border-radius: 2px;
+  }
+}
+
+// Loading indicator for bottom sheet
+.bottom-sheet-loading {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+.loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--color-border);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
   }
 }
 
