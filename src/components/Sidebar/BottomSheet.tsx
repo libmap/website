@@ -183,7 +183,7 @@ export function BottomSheet({ children }: BottomSheetProps) {
       content.removeEventListener('touchend', handleTouchEnd)
       content.removeEventListener('touchcancel', handleTouchEnd)
     }
-  }, [isStoryMode, contentHeight, setHeight, isMinimized])
+  }, [isStoryMode, contentHeight, setHeight])
 
   // Overscroll-to-drag handlers for overview mode
   const handleContentTouchStart = useCallback(
@@ -375,11 +375,6 @@ export function BottomSheet({ children }: BottomSheetProps) {
       }
     }, 50)
 
-    // Also try after a short delay
-    const timeoutId = setTimeout(() => {
-      startWatchingWhenReady()
-    }, 100)
-
     // Fallback: set height after max wait time
     const fallbackTimer = setTimeout(() => {
       if (!hasSetFinalHeight) {
@@ -409,7 +404,6 @@ export function BottomSheet({ children }: BottomSheetProps) {
     }
 
     return () => {
-      clearTimeout(timeoutId)
       clearTimeout(fallbackTimer)
       if (readyTimer) clearTimeout(readyTimer)
       if (pollTimer) clearInterval(pollTimer)
@@ -447,14 +441,13 @@ export function BottomSheet({ children }: BottomSheetProps) {
   // In story mode, only show content when current index matches ready index
   // In overview mode, always show content
   const isContentReady = !isStoryMode || readyStoryIndex === currentStoryIndex
-  const showContent = isContentReady
 
   // Show loading indicator in story mode when content is not ready
-  const showLoading = isStoryMode && !showContent && !isMinimized
+  const showLoading = isStoryMode && !isContentReady && !isMinimized
 
   return (
     <div
-      className={`bottom-sheet ${isMinimized ? 'minimized' : ''} ${isStoryMode ? 'story-mode' : ''} ${isDraggingState ? 'dragging' : ''} ${showContent ? 'content-ready' : ''}`}
+      className={`bottom-sheet ${isMinimized ? 'minimized' : ''} ${isStoryMode ? 'story-mode' : ''} ${isDraggingState ? 'dragging' : ''} ${isContentReady ? 'content-ready' : ''}`}
       style={{ height: `${height}vh` }}
       role="complementary"
       aria-label="Messages and Layers panel"

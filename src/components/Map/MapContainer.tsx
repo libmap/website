@@ -95,10 +95,21 @@ export function MapContainer() {
         ) {
           const bottomPaddingPx = (ui.bottomSheetHeight / 100) * window.innerHeight
 
-          mapInstance.easeTo({
-            padding: { top: 0, bottom: bottomPaddingPx, left: 0, right: 0 },
-            duration: 300,
-          })
+          // In story mode when content height changes, apply padding instantly
+          // to avoid a secondary animation after the flyTo completes.
+          // The bottom sheet CSS transition handles the visual smoothness.
+          const isStoryContentChange =
+            viewMode === 'story' &&
+            ui.storyContentHeight !== prev.ui.storyContentHeight
+
+          if (isStoryContentChange) {
+            mapInstance.setPadding({ top: 0, bottom: bottomPaddingPx, left: 0, right: 0 })
+          } else {
+            mapInstance.easeTo({
+              padding: { top: 0, bottom: bottomPaddingPx, left: 0, right: 0 },
+              duration: 300,
+            })
+          }
         }
       },
       {
