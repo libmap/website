@@ -183,7 +183,7 @@ export function BottomSheet({ children }: BottomSheetProps) {
       content.removeEventListener('touchend', handleTouchEnd)
       content.removeEventListener('touchcancel', handleTouchEnd)
     }
-  }, [isStoryMode, contentHeight, setHeight])
+  }, [isStoryMode, contentHeight, setHeight, isMinimized])
 
   // Overscroll-to-drag handlers for overview mode
   const handleContentTouchStart = useCallback(
