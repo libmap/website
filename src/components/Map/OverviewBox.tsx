@@ -1,4 +1,4 @@
-import { useMemo, useCallback, useEffect, useRef } from 'react'
+import { useMemo, useCallback, useEffect, useRef, useState } from 'react'
 import { useStore } from '@/store'
 import { useTweets } from '@/hooks/useTweets'
 import { useUrlState } from '@/hooks/useUrlState'
@@ -7,11 +7,13 @@ import { TeaserCard } from './TeaserCard'
 import { OverviewLayersPanel } from './OverviewLayersPanel'
 
 const ITEMS_PER_PAGE = 10
+const HOVER_DELAY_MS = 3000 // 3 seconds before panning
 
 export function OverviewBox() {
   const { visibleTweets, tweets: allTweets, isLoading } = useTweets()
   const { applyViewFromUrl } = useUrlState()
   const enterStoryView = useStore((state) => state.enterStoryView)
+  const viewMode = useStore((state) => state.tweets.viewMode)
   const activeTweetId = useStore((state) => state.tweets.activeTweetId)
   const hoverTweetId = useStore((state) => state.tweets.hoverTweetId)
   const selectedTweetId = useStore((state) => state.tweets.selectedTweetId)
@@ -42,8 +44,15 @@ export function OverviewBox() {
     }
   }, [totalPages, currentPage, setCurrentPage])
 
-  // Scroll to top when page changes
+  // Scroll to top and clear hover state when page changes
   useEffect(() => {
+    // Clear any hover timer to prevent accidental activation after page change
+    if (hoverTimerRef.current) {
+      clearTimeout(hoverTimerRef.current)
+      hoverTimerRef.current = null
+    }
+    setHoveringTweetId(null)
+
     // Scroll the overview list
     if (overviewListRef.current) {
       overviewListRef.current.scrollTo({
@@ -75,6 +84,28 @@ export function OverviewBox() {
   // Ref for the overview list container
   const overviewListRef = useRef<HTMLDivElement>(null)
 
+  // Hover timer state
+  const [hoveringTweetId, setHoveringTweetId] = useState<string | null>(null)
+  const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const hoverCooldownRef = useRef(false)
+
+  // Clear hover state and set cooldown when returning to overview from story view
+  useEffect(() => {
+    if (viewMode === 'overview') {
+      if (hoverTimerRef.current) {
+        clearTimeout(hoverTimerRef.current)
+        hoverTimerRef.current = null
+      }
+      setHoveringTweetId(null)
+
+      // Set cooldown to prevent accidental hover activation
+      hoverCooldownRef.current = true
+      setTimeout(() => {
+        hoverCooldownRef.current = false
+      }, 500)
+    }
+  }, [viewMode])
+
   // Scroll to selected tweet when it changes
   useEffect(() => {
     if (selectedTweetId && overviewListRef.current) {
@@ -92,31 +123,66 @@ export function OverviewBox() {
     }
   }, [selectedTweetId])
 
-  const handleTeaserHover = useCallback(
+  // Clean up timer on unmount
+  useEffect(() => {
+    return () => {
+      if (hoverTimerRef.current) {
+        clearTimeout(hoverTimerRef.current)
+      }
+    }
+  }, [])
+
+  const handleTeaserMouseEnter = useCallback(
     (tweetId: string) => {
-      const tweet = allTweetsMap.get(tweetId)
-      if (!tweet || !map) return
+      // Skip if in cooldown period (prevents accidental activation after navigation)
+      if (hoverCooldownRef.current) return
 
-      // Set hover state for this tweet
-      hoverTweet(tweetId)
-
-      // Clear any existing selection when hovering over a different card
-      if (selectedTweetId !== tweetId) {
-        selectTweetForHighlight(null)
+      // Clear any existing timer
+      if (hoverTimerRef.current) {
+        clearTimeout(hoverTimerRef.current)
       }
 
-      // Set layers to satellite and tweets
-      setVisibleLayers(['satellite', 'tweets'])
+      // Start hovering state (shows progress indicator)
+      setHoveringTweetId(tweetId)
 
-      // Pan to tweet location with overview zoom
-      map.flyTo({
-        center: [tweet.coordinates.lng, tweet.coordinates.lat],
-        zoom: 3,
-        duration: 1000,
-      })
+      // Set timer for pan action
+      hoverTimerRef.current = setTimeout(() => {
+        const tweet = allTweetsMap.get(tweetId)
+        if (!tweet || !map) return
+
+        // Set hover state for this tweet
+        hoverTweet(tweetId)
+
+        // Clear any existing selection when hovering over a different card
+        if (selectedTweetId !== tweetId) {
+          selectTweetForHighlight(null)
+        }
+
+        // Set layers to satellite and tweets
+        setVisibleLayers(['satellite', 'tweets'])
+
+        // Pan to tweet location with overview zoom
+        map.flyTo({
+          center: [tweet.coordinates.lng, tweet.coordinates.lat],
+          zoom: 3,
+          duration: 1000,
+        })
+
+        // Clear hovering state after pan starts
+        setHoveringTweetId(null)
+      }, HOVER_DELAY_MS)
     },
     [allTweetsMap, map, setVisibleLayers, selectedTweetId, selectTweetForHighlight, hoverTweet]
   )
+
+  const handleTeaserMouseLeave = useCallback(() => {
+    // Clear timer and hovering state
+    if (hoverTimerRef.current) {
+      clearTimeout(hoverTimerRef.current)
+      hoverTimerRef.current = null
+    }
+    setHoveringTweetId(null)
+  }, [])
 
   const handleTeaserClick = useCallback(
     (tweetId: string) => {
@@ -173,12 +239,32 @@ export function OverviewBox() {
 
   const handlePrevPage = () => {
     if (currentPage > 1) {
+      // Clear hover state and set cooldown to prevent accidental activation
+      if (hoverTimerRef.current) {
+        clearTimeout(hoverTimerRef.current)
+        hoverTimerRef.current = null
+      }
+      setHoveringTweetId(null)
+      hoverCooldownRef.current = true
+      setTimeout(() => {
+        hoverCooldownRef.current = false
+      }, 500)
       setCurrentPage(currentPage - 1)
     }
   }
 
   const handleNextPage = () => {
     if (currentPage < totalPages) {
+      // Clear hover state and set cooldown to prevent accidental activation
+      if (hoverTimerRef.current) {
+        clearTimeout(hoverTimerRef.current)
+        hoverTimerRef.current = null
+      }
+      setHoveringTweetId(null)
+      hoverCooldownRef.current = true
+      setTimeout(() => {
+        hoverCooldownRef.current = false
+      }, 500)
       setCurrentPage(currentPage + 1)
     }
   }
@@ -187,26 +273,20 @@ export function OverviewBox() {
     <div className="overview-box">
       <div className="overview-header">
         <span className="overview-count">{visibleTweets.length} messages</span>
-        <div className="overview-mode-toggle">
-          <button
-            type="button"
-            className={`mode-button ${overviewMode === 'messages' ? 'active' : ''}`}
-            onClick={() => setOverviewMode('messages')}
-            title="Show messages"
-            aria-label="Show messages"
-          >
-            📋
-          </button>
-          <button
-            type="button"
-            className={`mode-button ${overviewMode === 'layers' ? 'active' : ''}`}
-            onClick={() => setOverviewMode('layers')}
-            title="Show layers"
-            aria-label="Show layers"
-          >
-            🗺️
-          </button>
-        </div>
+        <button
+          type="button"
+          className="mode-toggle"
+          onClick={() => setOverviewMode(overviewMode === 'messages' ? 'layers' : 'messages')}
+          title={overviewMode === 'messages' ? 'Show layers' : 'Show messages'}
+          aria-label={overviewMode === 'messages' ? 'Show layers' : 'Show messages'}
+        >
+          <span className={`toggle-option ${overviewMode === 'messages' ? 'active' : ''}`}>
+            Messages
+          </span>
+          <span className={`toggle-option ${overviewMode === 'layers' ? 'active' : ''}`}>
+            Layers
+          </span>
+        </button>
       </div>
       <div className="overview-list" ref={overviewListRef}>
         {overviewMode === 'messages' ? (
@@ -216,10 +296,14 @@ export function OverviewBox() {
               tweet={tweet}
               hasStory={hasStoryReplies(tweet.id)}
               onClick={() => handleTeaserClick(tweet.id)}
-              onHover={() => handleTeaserHover(tweet.id)}
+              onMouseEnter={() => handleTeaserMouseEnter(tweet.id)}
+              onMouseLeave={handleTeaserMouseLeave}
+              onTouchStart={() => handleTeaserMouseEnter(tweet.id)}
+              onTouchEnd={handleTeaserMouseLeave}
               isActive={activeTweetId === tweet.id}
               isHover={hoverTweetId === tweet.id}
               isSelected={selectedTweetId === tweet.id}
+              isHovering={hoveringTweetId === tweet.id}
             />
           ))
         ) : (

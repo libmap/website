@@ -28,7 +28,7 @@ export function StoryViewer() {
   const [isViewerOpen, setIsViewerOpen] = useState(false)
 
   // Touch handling for swipe
-  const touchStartY = useRef<number | null>(null)
+  const touchStartX = useRef<number | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
   // Track the last applied story index to prevent duplicate flyTo calls
@@ -143,40 +143,35 @@ export function StoryViewer() {
     }
   }
 
-  // Touch handlers for swipe navigation
+  // Touch handlers for swipe navigation (horizontal only)
   const handleTouchStart = (e: React.TouchEvent) => {
     if (e.touches[0]) {
-      touchStartY.current = e.touches[0].clientY
+      touchStartX.current = e.touches[0].clientX
     }
   }
 
   const handleTouchEnd = (e: React.TouchEvent) => {
-    if (touchStartY.current === null || !e.changedTouches[0]) return
+    if (touchStartX.current === null || !e.changedTouches[0]) return
 
-    const touchEndY = e.changedTouches[0].clientY
-    const deltaY = touchStartY.current - touchEndY
+    const touchEndX = e.changedTouches[0].clientX
+    const deltaX = touchEndX - touchStartX.current
     const threshold = 50 // Minimum swipe distance
 
-    if (Math.abs(deltaY) > threshold) {
-      if (deltaY > 0) {
-        // Swipe up - go to next
-        handleNext()
-      } else {
-        // Swipe down - go to previous
-        handlePrev()
-      }
+    // Swipe right - go back to overview
+    if (deltaX > threshold) {
+      handleBack()
     }
 
-    touchStartY.current = null
+    touchStartX.current = null
   }
 
   if (!storyData || !currentItem) {
     return (
       <div className="story-viewer">
-        <button type="button" className="back-button" onClick={handleBack}>
-          ← Back to overview
-        </button>
         <div className="story-viewer-empty">
+          <button type="button" className="back-link-standalone" onClick={handleBack}>
+            ← Back to overview
+          </button>
           <p>Message not found</p>
         </div>
       </div>
@@ -189,42 +184,6 @@ export function StoryViewer() {
 
   return (
     <div className="story-viewer">
-      {/* Navigation header */}
-      <div className="story-viewer-header">
-        <button type="button" className="back-button" onClick={handleBack}>
-          ← Back
-        </button>
-        {hasMultipleItems && (
-          <span className="story-position">
-            {currentStoryIndex + 1} of {storyData.totalCount}
-          </span>
-        )}
-      </div>
-
-      {/* Story navigation arrows */}
-      {hasMultipleItems && (
-        <div className="story-nav-arrows">
-          <button
-            type="button"
-            className="nav-arrow nav-prev"
-            onClick={handlePrev}
-            disabled={!canGoPrev}
-            aria-label="Previous message"
-          >
-            ↑
-          </button>
-          <button
-            type="button"
-            className="nav-arrow nav-next"
-            onClick={handleNext}
-            disabled={!canGoNext}
-            aria-label="Next message"
-          >
-            ↓
-          </button>
-        </div>
-      )}
-
       {/* Message card */}
       <div
         ref={containerRef}
@@ -232,10 +191,48 @@ export function StoryViewer() {
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
-        <article className="message-card story-focus">
+        <article className={`message-card story-focus ${hasMultipleItems ? 'has-nav' : ''}`}>
+          {/* Story navigation arrows - inside card */}
+          {hasMultipleItems && (
+            <div className="story-nav-arrows">
+              <button
+                type="button"
+                className="nav-arrow nav-prev"
+                onClick={handlePrev}
+                disabled={!canGoPrev}
+                aria-label="Previous message"
+              >
+                ↑
+              </button>
+              <span className="story-position">
+                {currentStoryIndex + 1}/{storyData.totalCount}
+              </span>
+              <button
+                type="button"
+                className="nav-arrow nav-next"
+                onClick={handleNext}
+                disabled={!canGoNext}
+                aria-label="Next message"
+              >
+                ↓
+              </button>
+            </div>
+          )}
           <header className="message-header">
-            <span className="author">{currentItem.author}</span>
-            <span className="handle">@{currentItem.authorHandle}</span>
+            <button type="button" className="back-link" onClick={handleBack} aria-label="Back to overview">
+              ←
+            </button>
+            {currentItem.authorAvatar && (
+              <img
+                src={currentItem.authorAvatar}
+                alt=""
+                className="author-avatar"
+              />
+            )}
+            <div className="author-info">
+              <span className="author">{currentItem.author}</span>
+              <span className="handle">@{currentItem.authorHandle}</span>
+            </div>
           </header>
           <MessageText tweet={currentItem} />
           <MessageHashtags tweet={currentItem} />
@@ -257,21 +254,6 @@ export function StoryViewer() {
           </footer>
         </article>
       </div>
-
-      {/* Progress dots for stories */}
-      {hasMultipleItems && (
-        <div className="story-dots">
-          {storyData.allItems.map((_, index) => (
-            <button
-              key={index}
-              type="button"
-              className={`story-dot ${index === currentStoryIndex ? 'active' : ''}`}
-              onClick={() => setStoryIndex(index)}
-              aria-label={`Go to message ${index + 1}`}
-            />
-          ))}
-        </div>
-      )}
 
       {/* Media Viewer */}
       <MediaViewer

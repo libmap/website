@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { MapContainer } from '@/components/Map/MapContainer'
 import { Sidebar } from '@/components/Sidebar/Sidebar'
+import { WelcomeDialog } from '@/components/Map/WelcomeDialog'
 import { useUrlState } from '@/hooks/useUrlState'
 import { useIsMobile } from '@/hooks/useMediaQuery'
 import { useStore } from '@/store'
@@ -84,9 +85,12 @@ export function MapPage() {
   }
 
   return (
-    <div className="app">
-      <MapContainer />
-      <Sidebar />
-    </div>
+    <>
+      <div className="app">
+        <MapContainer />
+        <Sidebar />
+      </div>
+      <WelcomeDialog />
+    </>
   )
 }

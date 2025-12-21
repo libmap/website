@@ -15,51 +15,45 @@
 }
 
 .overview-header {
-  padding: 10px 12px;
+  padding: 8px 12px;
   border-bottom: 1px solid var(--color-border);
-  background: var(--color-surface);
+  background: var(--color-background);
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
 .overview-count {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 500;
   color: var(--color-text-muted);
-  margin-left: 8px;
 }
 
-.overview-mode-toggle {
+.mode-toggle {
   display: flex;
-  gap: 8px;
   align-items: center;
-}
-
-.mode-button {
-  padding: 4px 8px;
-  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  border: none;
   border-radius: var(--radius-sm);
-  background: var(--color-background);
-  color: var(--color-text);
-  font-size: 14px;
+  padding: 2px;
   cursor: pointer;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
+  gap: 0;
+}
 
-  &:hover:not(:disabled) {
-    background: var(--color-surface);
-    border-color: var(--color-primary);
-  }
+.toggle-option {
+  padding: 4px 8px;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  border-radius: calc(var(--radius-sm) - 1px);
+  transition: all 0.15s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
 
   &.active {
-    background: var(--color-primary);
-    color: white;
-    border-color: var(--color-primary);
+    background: var(--color-background);
+    color: var(--color-text);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
   }
 }
 
@@ -89,8 +83,10 @@
   border-bottom: 1px solid var(--color-border);
   cursor: pointer;
   transition: background 0.15s ease;
+  position: relative;
+  overflow: hidden;
 
-  &:hover {
+  &:hover:not(.hover) {
     background: var(--color-surface);
   }
 
@@ -129,6 +125,30 @@
     .story-badge {
       color: var(--color-text);
     }
+  }
+
+  // Hovering state (timer counting down) - but not if already in hover state
+  &.hovering:not(.hover) {
+    background: var(--color-surface);
+  }
+}
+
+// Hover progress indicator - animates left to right over 3 seconds
+.hover-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  background: var(--color-primary);
+  animation: hover-progress 3s linear forwards;
+}
+
+@keyframes hover-progress {
+  from {
+    width: 0%;
+  }
+  to {
+    width: 100%;
   }
 }
 
@@ -196,115 +216,173 @@
 .story-viewer {
   display: flex;
   flex-direction: column;
-  height: 100%;
-  padding: 16px;
-  background-color: #e8eef5;
-  position: relative; // For nav arrow positioning
-}
-
-.story-viewer-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 12px;
-}
-
-.story-position {
-  font-size: 12px;
-  color: var(--color-text-muted);
-  font-weight: 500;
-}
-
-.story-nav-arrows {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  position: absolute;
-  right: 24px;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 10;
-}
-
-.nav-arrow {
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--color-border);
-  border-radius: 50%;
-  background: var(--color-background);
-  color: var(--color-text);
-  font-size: 16px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: var(--shadow-sm);
-
-  &:hover:not(:disabled) {
-    background: var(--color-surface);
-    border-color: var(--color-primary);
-    color: var(--color-primary);
-  }
-
-  &:disabled {
-    opacity: 0.3;
-    cursor: not-allowed;
-  }
 }
 
 .story-content {
-  flex: 1;
   overflow-y: auto;
-  padding-right: 48px; // Space for nav arrows
 }
 
 .story-viewer-empty {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 16px;
   flex: 1;
   color: var(--color-text-muted);
 }
 
-// Story focus card (larger than normal message card)
-.message-card.story-focus {
-  border-radius: var(--radius-sm);
-
-  .message-text {
-    font-size: 14px;
-    line-height: 1.6;
-  }
-}
-
-// Story progress dots
-.story-dots {
-  display: flex;
-  gap: 6px;
-  justify-content: center;
-  padding: 12px;
-  margin-top: 12px;
-}
-
-.story-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--color-border);
+.back-link-standalone {
+  padding: 8px 16px;
   border: none;
-  padding: 0;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 13px;
   cursor: pointer;
   transition: all 0.2s ease;
 
   &:hover {
-    background: var(--color-text-muted);
-  }
-
-  &.active {
     background: var(--color-primary);
-    transform: scale(1.2);
+    color: white;
   }
 }
+
+// Story focus card - integrated style like teaser cards
+.message-card.story-focus {
+  background: var(--color-background);
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 12px 16px;
+  position: relative;
+  cursor: default;
+
+  // Add padding for nav arrows when story has multiple items
+  &.has-nav {
+    padding-right: 70px;
+  }
+
+  // Nav arrows positioned inside the card
+  .story-nav-arrows {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .nav-arrow {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--color-border);
+    border-radius: 50%;
+    background: var(--color-background);
+    color: var(--color-text-muted);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover:not(:disabled) {
+      background: var(--color-primary);
+      border-color: var(--color-primary);
+      color: white;
+    }
+
+    &:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+  }
+
+  .story-position {
+    font-size: 10px;
+    color: var(--color-text-muted);
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  .message-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .back-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border: 1px solid var(--color-border);
+    border-radius: 50%;
+    background: var(--color-background);
+    color: var(--color-text-muted);
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+
+    &:hover {
+      background: var(--color-primary);
+      border-color: var(--color-primary);
+      color: white;
+    }
+  }
+
+  .author-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+  }
+
+  .author-info {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .author {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-text);
+  }
+
+  .handle {
+    font-size: 11px;
+    color: var(--color-text-muted);
+  }
+
+  .message-text {
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--color-text);
+  }
+
+  .message-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid var(--color-border);
+    font-size: 11px;
+  }
+}
+
 
 // Compact layers panel for overview box
 .overview-layers-panel {
@@ -422,26 +500,7 @@
 // Story mode adjustments for floating box
 .overview-box.story-mode {
   max-height: 50vh;
-  width: 340px;
-
-  .story-viewer {
-    padding: 12px;
-    overflow-y: auto;
-  }
-
-  .story-nav-arrows {
-    right: 20px;
-  }
-
-  .story-content {
-    padding-right: 48px; // Space for nav arrows on the side
-  }
-
-  .message-card.story-focus {
-    .message-text {
-      font-size: 13px;
-    }
-  }
+  width: 320px;
 }
 
 // Mobile adjustments for overview box inside bottom sheet
@@ -452,13 +511,5 @@
     max-height: none;
     box-shadow: none;
     border-radius: 0;
-  }
-
-  .story-nav-arrows {
-    right: 16px;
-  }
-
-  .story-content {
-    padding-right: 40px;
   }
 }

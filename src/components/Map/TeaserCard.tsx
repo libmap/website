@@ -4,10 +4,14 @@ interface TeaserCardProps {
   tweet: Tweet
   hasStory: boolean
   onClick: () => void
-  onHover?: () => void
+  onMouseEnter?: () => void
+  onMouseLeave?: () => void
+  onTouchStart?: () => void
+  onTouchEnd?: () => void
   isActive?: boolean
   isHover?: boolean
   isSelected?: boolean
+  isHovering?: boolean // true while hover timer is counting down
 }
 
 function getSourceIcon(source?: string): string {
@@ -16,7 +20,8 @@ function getSourceIcon(source?: string): string {
   switch (source.toLowerCase()) {
     case 'twitter':
     case 'x':
-      return '𝕏💬'
+    case '𝕏/twitter':
+      return '𝕏'
     case 'mastodon.social':
       return '🐘'
     case 'bluesky':
@@ -37,10 +42,14 @@ export function TeaserCard({
   tweet,
   hasStory,
   onClick,
-  onHover,
+  onMouseEnter,
+  onMouseLeave,
+  onTouchStart,
+  onTouchEnd,
   isActive,
   isHover,
   isSelected,
+  isHovering,
 }: TeaserCardProps) {
   const sourceIcon = getSourceIcon(tweet.source)
   const teaserText = truncateText(tweet.text, 50)
@@ -54,8 +63,7 @@ export function TeaserCard({
         day: 'numeric',
         year: 'numeric',
       })
-    } catch (error) {
-      console.error('Error formatting date:', error)
+    } catch {
       return ''
     }
   }
@@ -64,12 +72,16 @@ export function TeaserCard({
 
   return (
     <div
-      className={`teaser-card ${isActive ? 'active' : ''} ${isHover ? 'hover' : ''} ${isSelected ? 'selected' : ''}`}
+      className={`teaser-card ${isActive ? 'active' : ''} ${isHover ? 'hover' : ''} ${isSelected ? 'selected' : ''} ${isHovering ? 'hovering' : ''}`}
       data-tweet-id={tweet.id}
       onClick={onClick}
-      onMouseEnter={onHover}
-      onTouchStart={onHover}
-      onFocus={onHover}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+      onTouchStart={onTouchStart}
+      onTouchEnd={onTouchEnd}
+      onTouchCancel={onTouchEnd}
+      onFocus={onMouseEnter}
+      onBlur={onMouseLeave}
       role="button"
       tabIndex={0}
       onKeyDown={(e) => {
@@ -79,6 +91,8 @@ export function TeaserCard({
         }
       }}
     >
+      {/* Hover progress indicator */}
+      {isHovering && <div className="hover-progress" />}
       <div className="teaser-content">
         <div className="teaser-author-info">
           <span className="teaser-handle">@{tweet.authorHandle}</span>

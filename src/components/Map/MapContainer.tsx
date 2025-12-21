@@ -21,11 +21,10 @@ export function MapContainer() {
   const isPreview = useStore((state) => state.ui.isPreview)
   const bottomSheetHeight = useStore((state) => state.ui.bottomSheetHeight)
   const viewMode = useStore((state) => state.tweets.viewMode)
-  const mapZoom = useStore((state) => state.map.zoom)
   const [lastSnappedHeight, setLastSnappedHeight] = useState(50)
 
   // Show floating panel on desktop (overview box or story viewer)
-  const showOverviewBox = !isMobile && viewMode === 'overview' && mapZoom <= 12
+  const showOverviewBox = !isMobile && viewMode === 'overview'
   const showStoryViewer = !isMobile && viewMode === 'story'
 
   // Initialize map once on mount
