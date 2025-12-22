@@ -222,13 +222,15 @@ export function StoryViewer() {
             <button type="button" className="back-link" onClick={handleBack} aria-label="Back to overview">
               ←
             </button>
-            {currentItem.authorAvatar && (
-              <img
-                src={currentItem.authorAvatar}
-                alt=""
-                className="author-avatar"
-              />
-            )}
+            <img
+              src={currentItem.authorAvatar || '/avatar_icon.png'}
+              alt=""
+              className="author-avatar"
+              onError={(e) => {
+                e.currentTarget.onerror = null
+                e.currentTarget.src = '/avatar_icon.png'
+              }}
+            />
             <div className="author-info">
               <span className="author">{currentItem.author}</span>
               <span className="handle">@{currentItem.authorHandle}</span>
