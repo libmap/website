@@ -29,6 +29,10 @@ export function BottomSheet({ children }: BottomSheetProps) {
   const contentRef = useRef<HTMLDivElement>(null)
   const overscrollStartY = useRef(0)
   const overscrollStartHeight = useRef(0)
+  // Which scroll edge the current touch gesture started at; a gesture that
+  // merely reaches an edge while scrolling must not resize the sheet
+  const overscrollArmedTop = useRef(false)
+  const overscrollArmedBottom = useRef(false)
   const heightRef = useRef(height)
 
   // Keep heightRef in sync
@@ -185,7 +189,8 @@ export function BottomSheet({ children }: BottomSheetProps) {
     }
   }, [isStoryMode, contentHeight, setHeight, isMinimized])
 
-  // Overscroll-to-drag handlers for overview mode
+  // Overscroll-to-drag handlers for overview mode: dragging down at the top
+  // shrinks the sheet, swiping up at the bottom of the scroll expands it
   const handleContentTouchStart = useCallback(
     (e: React.TouchEvent) => {
       // Skip in story mode - handled by native listeners
@@ -194,11 +199,16 @@ export function BottomSheet({ children }: BottomSheetProps) {
       const content = contentRef.current
       if (!content || !e.touches[0]) return
 
-      // Check if at top of scroll OR if content is not scrollable (short content)
+      // Only arm the drag at the scroll edges (or when content is short);
+      // gestures starting mid-list scroll normally
       const isAtTop = content.scrollTop === 0
+      const isAtBottom = content.scrollTop + content.clientHeight >= content.scrollHeight - 1
       const isContentShort = content.scrollHeight <= content.clientHeight
 
-      if (isAtTop || isContentShort) {
+      overscrollArmedTop.current = isAtTop || isContentShort
+      overscrollArmedBottom.current = isAtBottom || isContentShort
+
+      if (overscrollArmedTop.current || overscrollArmedBottom.current) {
         overscrollStartY.current = e.touches[0].clientY
         overscrollStartHeight.current = height
         setIsOverscrolling(false)
@@ -218,11 +228,17 @@ export function BottomSheet({ children }: BottomSheetProps) {
       if (!content || !touch) return
 
       const isAtTop = content.scrollTop === 0
-      const isContentShort = content.scrollHeight <= content.clientHeight
+      const isAtBottom = content.scrollTop + content.clientHeight >= content.scrollHeight - 1
       const deltaY = touch.clientY - overscrollStartY.current
 
-      // Only handle if at top OR content is short, and scrolling up (positive deltaY means swiping down)
-      if ((isAtTop || isContentShort) && deltaY > 0) {
+      // Swiping down (positive deltaY) at the top shrinks the sheet;
+      // swiping up (negative deltaY) at the bottom expands it. Each direction
+      // requires the gesture to have started at that edge, so scrolling into
+      // an edge mid-gesture doesn't resize the sheet.
+      const shrinking = overscrollArmedTop.current && isAtTop && deltaY > 0
+      const expanding = overscrollArmedBottom.current && isAtBottom && deltaY < 0
+
+      if (shrinking || expanding) {
         setIsOverscrolling(true)
 
         // Convert touch delta to vh percentage (same as drag handle logic)
@@ -237,6 +253,9 @@ export function BottomSheet({ children }: BottomSheetProps) {
   const handleContentTouchEnd = useCallback(() => {
     // Skip in story mode - handled by native listeners
     if (isStoryMode) return
+
+    overscrollArmedTop.current = false
+    overscrollArmedBottom.current = false
 
     // First re-enable transitions
     setIsDraggingState(false)
