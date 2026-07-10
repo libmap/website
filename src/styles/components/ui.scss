@@ -245,3 +245,36 @@
     opacity: 0.9;
   }
 }
+
+// Confirmation dialog (shares the welcome dialog styling)
+.confirm-dialog {
+  max-width: 340px;
+
+  .confirm-message {
+    font-size: 14px;
+    color: var(--color-text);
+    line-height: 1.5;
+    margin: 0 0 20px 0;
+    padding-right: 16px;
+  }
+
+  .confirm-actions {
+    display: flex;
+    gap: 8px;
+
+    .welcome-btn {
+      width: auto;
+      flex: 1;
+    }
+
+    .confirm-cancel {
+      background: var(--color-surface);
+      color: var(--color-text);
+      border: 1px solid var(--color-border);
+    }
+
+    .confirm-danger {
+      background: #e74c3c;
+    }
+  }
+}

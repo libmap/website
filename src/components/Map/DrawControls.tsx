@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { IControl } from 'maplibre-gl'
 import { MaplibreTerradrawControl } from '@watergis/maplibre-gl-terradraw'
 import {
@@ -10,6 +10,7 @@ import {
   type GeoJSONStoreFeatures,
 } from 'terra-draw'
 import { DrawColorPicker, DrawImportButton } from './controls'
+import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { useStore } from '@/store'
 
 const WHITE: HexColor = '#ffffff'
@@ -30,6 +31,10 @@ interface DrawControlsProps {
 export function DrawControls({ map, controlsRef }: DrawControlsProps) {
   const drawColorRef = useRef<HexColor>('#E74C3C')
   const setDrawings = useStore((state) => state.setDrawings)
+  const [confirmRequest, setConfirmRequest] = useState<{
+    message: string
+    onConfirm: () => void
+  } | null>(null)
 
   useEffect(() => {
     if (!map) return
@@ -289,13 +294,61 @@ export function DrawControls({ map, controlsRef }: DrawControlsProps) {
     const onFeatureDeleted = () => syncDrawings()
     draw.on('feature-deleted', onFeatureDeleted)
 
+    // Delete button: always confirm; delete only the selected shape if one
+    // is selected, otherwise everything. Intercepted in the capture phase on
+    // the toolbar container so it runs before the control's own delete-all
+    // handler; allowNextDelete lets the confirmed delete-all through.
+    let allowNextDelete = false
+    const onDeleteCapture = (e: MouseEvent) => {
+      const deleteBtn = (e.target as HTMLElement | null)?.closest(
+        '.maplibregl-terradraw-delete-button'
+      )
+      if (!deleteBtn) return
+      if (allowNextDelete) {
+        allowNextDelete = false
+        return
+      }
+      e.preventDefault()
+      e.stopPropagation()
+
+      if (selectedId != null) {
+        const id = selectedId
+        setConfirmRequest({
+          message: 'Delete the selected shape?',
+          onConfirm: () => {
+            terraDraw.removeFeatures([id])
+            terraDraw.deselectFeature(id)
+            selectedId = null
+            ;(
+              draw as unknown as { toggleButtonsWhenNoFeature?: () => void }
+            ).toggleButtonsWhenNoFeature?.()
+            syncDrawings()
+          },
+        })
+        return
+      }
+
+      const count = draw.getFeatures()?.features.length ?? 0
+      if (count === 0) return
+      setConfirmRequest({
+        message: count === 1 ? 'Delete the shape?' : `Delete all ${count} shapes?`,
+        onConfirm: () => {
+          allowNextDelete = true
+          ;(deleteBtn as HTMLElement).click()
+        },
+      })
+    }
+
     // Inject the import and color buttons into the toolbar once it has
     // rendered (controlContainer is protected on MaplibreTerradrawControl)
+    let toolbarContainer: HTMLElement | null = null
     const injectTimeout = setTimeout(() => {
       const container = (draw as unknown as { controlContainer?: HTMLElement }).controlContainer
       if (container) {
         container.appendChild(importButton.createButton())
         container.appendChild(colorPicker.createColorButton(container))
+        toolbarContainer = container
+        container.addEventListener('click', onDeleteCapture, true)
       } else {
         console.error('Terra Draw container not found')
       }
@@ -304,6 +357,7 @@ export function DrawControls({ map, controlsRef }: DrawControlsProps) {
     // Cleanup
     return () => {
       clearTimeout(injectTimeout)
+      toolbarContainer?.removeEventListener('click', onDeleteCapture, true)
       unsubscribeDrawings()
       draw.off('feature-deleted', onFeatureDeleted)
       terraDraw.off('finish', onFinish)
@@ -315,5 +369,17 @@ export function DrawControls({ map, controlsRef }: DrawControlsProps) {
     }
   }, [map, controlsRef, setDrawings])
 
-  return null
+  if (!confirmRequest) return null
+
+  return (
+    <ConfirmDialog
+      message={confirmRequest.message}
+      confirmLabel="Delete"
+      onConfirm={() => {
+        confirmRequest.onConfirm()
+        setConfirmRequest(null)
+      }}
+      onCancel={() => setConfirmRequest(null)}
+    />
+  )
 }
