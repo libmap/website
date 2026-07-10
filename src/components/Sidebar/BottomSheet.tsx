@@ -286,8 +286,13 @@ export function BottomSheet({ children }: BottomSheetProps) {
 
       hasSetFinalHeight = true
 
-      const cardHeight = Math.max(messageCard.scrollHeight, messageCard.offsetHeight)
-      const totalHeight = cardHeight + 60
+      // Measure the real chrome around the content (drag handle) instead of
+      // guessing, so the sheet ends exactly at the bottom of the message.
+      // In story mode the content div is flex: none, so scrollHeight is the
+      // natural content height including any wrapper padding.
+      const handleEl = content.parentElement?.querySelector('.drag-handle') as HTMLElement | null
+      const chromeHeight = handleEl?.offsetHeight ?? 28
+      const totalHeight = content.scrollHeight + chromeHeight + 2
       const heightInVh = (totalHeight / window.innerHeight) * 100
       const newHeight = Math.min(90, Math.max(20, heightInVh))
 
@@ -424,6 +429,12 @@ export function BottomSheet({ children }: BottomSheetProps) {
     if (isStoryMode && prevViewModeRef.current !== 'story') {
       // Entering story mode: reset ready state, keep current height until images load
       setReadyStoryIndex(null)
+      // Opening a story while minimized (e.g. "View Details" in a marker
+      // popup): expand so the spinner shows and the measured content height
+      // gets applied (the content-height effect ignores minimized sheets)
+      if (heightRef.current <= 10) {
+        setHeight(30)
+      }
     } else if (!isStoryMode && prevViewModeRef.current === 'story') {
       // Leaving story mode (back to overview): expand to 50%
       setHeight(50)
