@@ -71,10 +71,12 @@ export function BottomSheet({ children }: BottomSheetProps) {
 
       const deltaY = startY.current - e.clientY
       const deltaPercent = (deltaY / window.innerHeight) * 100
-      const newHeight = Math.min(maxHeight, Math.max(10, startHeight.current + deltaPercent))
+      // Not clamped to maxHeight: in story mode the drag is elastic — the
+      // sheet follows the pointer and snaps back to content size on release
+      const newHeight = Math.min(90, Math.max(10, startHeight.current + deltaPercent))
       setHeight(newHeight)
     },
-    [setHeight, maxHeight]
+    [setHeight]
   )
 
   const handleDragEnd = useCallback(() => {
@@ -139,12 +141,10 @@ export function BottomSheet({ children }: BottomSheetProps) {
       setIsOverscrolling(true)
 
       const deltaPercent = (deltaY / window.innerHeight) * 100
-      const currentMaxHeight = contentHeight !== null
-        ? Math.min(90, Math.max(10, contentHeight))
-        : 90
       // Positive deltaY = swipe down = reduce height
-      // Negative deltaY = swipe up = increase height (but capped at maxHeight)
-      const newHeight = Math.min(currentMaxHeight, Math.max(10, startHeight - deltaPercent))
+      // Negative deltaY = swipe up = increase height; not capped at the
+      // content height — the drag is elastic and snaps back on release
+      const newHeight = Math.min(90, Math.max(10, startHeight - deltaPercent))
       setHeight(newHeight)
     }
 

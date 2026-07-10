@@ -29,6 +29,7 @@ export function StoryViewer() {
 
   // Touch handling for swipe
   const touchStartX = useRef<number | null>(null)
+  const touchStartY = useRef<number | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
   // Track the last applied story index to prevent duplicate flyTo calls
@@ -147,22 +148,27 @@ export function StoryViewer() {
   const handleTouchStart = (e: React.TouchEvent) => {
     if (e.touches[0]) {
       touchStartX.current = e.touches[0].clientX
+      touchStartY.current = e.touches[0].clientY
     }
   }
 
   const handleTouchEnd = (e: React.TouchEvent) => {
-    if (touchStartX.current === null || !e.changedTouches[0]) return
+    if (touchStartX.current === null || touchStartY.current === null || !e.changedTouches[0]) {
+      return
+    }
 
-    const touchEndX = e.changedTouches[0].clientX
-    const deltaX = touchEndX - touchStartX.current
+    const deltaX = e.changedTouches[0].clientX - touchStartX.current
+    const deltaY = e.changedTouches[0].clientY - touchStartY.current
     const threshold = 50 // Minimum swipe distance
 
-    // Swipe right - go back to overview
-    if (deltaX > threshold) {
+    // Swipe right - go back to overview. Must be predominantly horizontal,
+    // so vertical drags of the sheet that drift sideways don't trigger it
+    if (deltaX > threshold && deltaX > Math.abs(deltaY)) {
       handleBack()
     }
 
     touchStartX.current = null
+    touchStartY.current = null
   }
 
   if (!storyData || !currentItem) {
