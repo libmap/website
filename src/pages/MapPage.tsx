@@ -68,7 +68,7 @@ export function MapPage() {
         }
       }
     }
-  }, [urlToTweetId.size, tweetsData.size, activeTweetId, enterStoryView, setStoryIndex, tweetsData])
+  }, [urlToTweetId, tweetsData, activeTweetId, enterStoryView, setStoryIndex])
 
   // Sync mobile state
   useEffect(() => {

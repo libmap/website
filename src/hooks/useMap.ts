@@ -68,7 +68,7 @@ export function useMap() {
     if (globalMapInstance) {
       try {
         globalMapInstance.remove()
-      } catch (e) {
+      } catch {
         // Ignore errors during cleanup
       }
       globalMapInstance = null

@@ -490,7 +490,7 @@ export function LayerManager() {
         map.off('idle', doSync)
       }
     }
-  }, [map, syncLayers])
+  }, [map, syncLayers, visibleLayers])
 
   // Close popup when requested
   useEffect(() => {
@@ -502,11 +502,12 @@ export function LayerManager() {
 
   // Cleanup on unmount
   useEffect(() => {
+    const loadedLayers = loadedLayersRef.current
     return () => {
       if (popupRef.current) {
         popupRef.current.remove()
       }
-      loadedLayersRef.current.clear()
+      loadedLayers.clear()
     }
   }, [])
 

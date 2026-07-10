@@ -217,7 +217,7 @@ export function TweetMarkers() {
         }
       }, 200)
     },
-    [map, setVisibleLayers, popupsRef, selectTweetForHighlight, getHeadTweetById]
+    [map, setVisibleLayers, popupsRef, selectTweetForHighlight, allTweetsMap]
   )
 
   // Handle full activation from popup button
@@ -361,7 +361,7 @@ export function TweetMarkers() {
     handleTweetActivation,
     hoverTweet,
     selectTweetForHighlight,
-    getHeadTweetById,
+    allTweetsMap,
   ])
 
   // Update visible tweets when map moves
@@ -413,12 +413,14 @@ export function TweetMarkers() {
 
   // Cleanup on unmount
   useEffect(() => {
+    const markers = markersRef.current
+    const popups = popupsRef.current
     return () => {
-      for (const marker of markersRef.current.values()) {
+      for (const marker of markers.values()) {
         marker.remove()
       }
-      markersRef.current.clear()
-      popupsRef.current.clear()
+      markers.clear()
+      popups.clear()
     }
   }, [])
 
