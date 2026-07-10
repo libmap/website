@@ -1,5 +1,6 @@
 import { useStore } from '@/store'
 import { BASE_TILES, OVERLAY_LAYERS, POINT_LAYERS } from '@/lib/layers'
+import { InfoTooltip } from '@/components/common/InfoTooltip'
 
 export function LayersPanel() {
   const visibleLayers = useStore((state) => state.layers.visible)
@@ -18,7 +19,8 @@ export function LayersPanel() {
   const currentBase = visibleLayers.find((id) => BASE_TILES.some((t) => t.id === id)) ?? 'satellite'
 
   // Current overlay layer (first visible overlay)
-  const currentOverlay = visibleLayers.find((id) => OVERLAY_LAYERS.some((o) => o.id === id)) ?? 'none'
+  const currentOverlay =
+    visibleLayers.find((id) => OVERLAY_LAYERS.some((o) => o.id === id)) ?? 'none'
 
   const handleBaseChange = (newBase: string) => {
     // Remove old base, add new one
@@ -104,7 +106,10 @@ export function LayersPanel() {
                 checked={visibleLayers.includes(layer.id)}
                 onChange={() => handleOverlayToggle(layer.id)}
               />
-              <span className="layer-name">{layer.name}</span>
+              <span className="layer-name">
+                {layer.name}
+                {layer.citation && <InfoTooltip citation={layer.citation} />}
+              </span>
               <span
                 className="layer-color"
                 style={{ backgroundColor: layer.color, width: 12, height: 12, borderRadius: '50%' }}

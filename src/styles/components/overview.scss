@@ -383,7 +383,6 @@
   }
 }
 
-
 // Compact layers panel for overview box
 .overview-layers-panel {
   padding: 8px;
@@ -457,6 +456,31 @@
   border-radius: 50%;
   margin-left: auto;
   border: 1px solid var(--color-border);
+}
+
+.layer-option.checkbox.compact .layer-name {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+// Compact variant of the citation tooltip (base styles live in ui.scss)
+.overview-layers-panel {
+  .layer-info-icon {
+    margin-left: 2px;
+  }
+
+  .layer-info-tooltip {
+    background: var(--color-background);
+    padding: 8px 10px;
+    font-size: 10px;
+    width: 220px;
+    max-width: 280px;
+
+    &::after {
+      border-top-color: var(--color-background);
+    }
+  }
 }
 
 // Pagination for overview box

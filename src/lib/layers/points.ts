@@ -3,13 +3,13 @@ import type { PointLayerConfig } from './types'
 const CITATIONS = {
   climatetrace:
     'Climate TRACE - Tracking Real-time Atmospheric Carbon Emissions (2022), Climate TRACE Emissions Inventory, https://climatetrace.org [November 2022]',
-  wri: 'Dataset coordinated by World Resource Institute and Google Earth Outreach.',
+  wri: 'Dataset coordinated by World Resource Institute and Google Earth Outreach. The project is the result of a large collaboration involving many partners and aims to build an open database of all power plants in the world.',
   eprtr:
-    'The E-PRTR is a service managed by the European Commission and the European Environment Agency (EEA).',
+    'The E-PRTR is a service managed by the European Commission and the European Environment Agency (EEA). The online register contains annual information on emissions of 91 substances released into the air, water and land by 30,000 industrial facilities throughout Europe.',
   bigcities:
-    "Simplemaps commercial database of the world's cities and towns built using authoritative sources.",
+    "Simplemaps commercial database of the world's cities and towns built using authoritative sources such as the NGIA, US Geological Survey, US Census Bureau, and NASA.",
   euets:
-    "The EU ETS is a cornerstone of the EU's policy to combat climate change and its key tool for reducing greenhouse gas emissions cost-effectively.",
+    "The EU ETS is a cornerstone of the EU's policy to combat climate change and its key tool for reducing greenhouse gas emissions cost-effectively. It is the world's first major carbon market and remains the biggest one.",
 }
 
 export const POINT_LAYERS: PointLayerConfig[] = [

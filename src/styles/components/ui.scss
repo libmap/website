@@ -55,6 +55,67 @@
   .layer-name {
     font-size: 13px;
     flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+}
+
+// Layer info tooltip for source citations
+.layer-info-icon {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-muted);
+  cursor: help;
+  margin-left: 4px;
+
+  &:hover {
+    color: var(--color-primary);
+  }
+
+  svg {
+    display: block;
+  }
+}
+
+.layer-info-tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--color-text-muted);
+  box-shadow: var(--shadow-md);
+  z-index: 100;
+  width: 250px;
+  max-width: 300px;
+  text-align: left;
+  white-space: normal;
+  pointer-events: none;
+
+  // Arrow: ::before draws the border, ::after fills with the tooltip background
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 6px solid transparent;
+    border-top-color: var(--color-border);
+  }
+
+  &::after {
+    margin-top: -1px;
+    border-width: 5px;
+    border-top-color: var(--color-surface);
   }
 }
 
