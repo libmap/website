@@ -263,12 +263,13 @@
     padding-right: 70px;
   }
 
-  // Nav arrows positioned inside the card
+  // Nav arrows at a fixed offset so they don't shift with message length;
+  // starts alongside the header divider so the stack still fits within a
+  // card holding a one-line message
   .story-nav-arrows {
     position: absolute;
     right: 12px;
-    top: 50%;
-    transform: translateY(-50%);
+    top: 44px;
     display: flex;
     flex-direction: column;
     align-items: center;
