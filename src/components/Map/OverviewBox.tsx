@@ -22,6 +22,8 @@ export function OverviewBox() {
   const allTweetsMap = useStore((state) => state.tweets.data)
   const map = useStore((state) => state.map.instance)
   const setStateBefore = useStore((state) => state.setStateBefore)
+  const filterByBounds = useStore((state) => state.tweets.filterByBounds)
+  const setFilterByBounds = useStore((state) => state.setFilterByBounds)
 
   // Pagination state from store
   const currentPage = useStore((state) => state.tweets.overviewPage)
@@ -232,6 +234,23 @@ export function OverviewBox() {
       <div className="overview-box">
         <div className="overview-empty">
           <p>No messages in this area</p>
+          {filterByBounds && (
+            <button
+              type="button"
+              className="clear-bounds-filter"
+              onClick={() => setFilterByBounds(false, null)}
+            >
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+                <path
+                  d="M2 2L14 14M14 2L2 14"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+              </svg>
+              Clear filter – show all messages
+            </button>
+          )}
         </div>
       </div>
     )
@@ -290,22 +309,42 @@ export function OverviewBox() {
       </div>
       <div className="overview-list" ref={overviewListRef}>
         {overviewMode === 'messages' ? (
-          headTweets.map((tweet) => (
-            <TeaserCard
-              key={tweet.id}
-              tweet={tweet}
-              hasStory={hasStoryReplies(tweet.id)}
-              onClick={() => handleTeaserClick(tweet.id)}
-              onMouseEnter={() => handleTeaserMouseEnter(tweet.id)}
-              onMouseLeave={handleTeaserMouseLeave}
-              onTouchStart={() => handleTeaserMouseEnter(tweet.id)}
-              onTouchEnd={handleTeaserMouseLeave}
-              isActive={activeTweetId === tweet.id}
-              isHover={hoverTweetId === tweet.id}
-              isSelected={selectedTweetId === tweet.id}
-              isHovering={hoveringTweetId === tweet.id}
-            />
-          ))
+          <>
+            {headTweets.map((tweet) => (
+              <TeaserCard
+                key={tweet.id}
+                tweet={tweet}
+                hasStory={hasStoryReplies(tweet.id)}
+                onClick={() => handleTeaserClick(tweet.id)}
+                onMouseEnter={() => handleTeaserMouseEnter(tweet.id)}
+                onMouseLeave={handleTeaserMouseLeave}
+                onTouchStart={() => handleTeaserMouseEnter(tweet.id)}
+                onTouchEnd={handleTeaserMouseLeave}
+                isActive={activeTweetId === tweet.id}
+                isHover={hoverTweetId === tweet.id}
+                isSelected={selectedTweetId === tweet.id}
+                isHovering={hoveringTweetId === tweet.id}
+              />
+            ))}
+            {/* Clear "in view" filter, at the end of the previews */}
+            {filterByBounds && (
+              <button
+                type="button"
+                className="clear-bounds-filter"
+                onClick={() => setFilterByBounds(false, null)}
+              >
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+                  <path
+                    d="M2 2L14 14M14 2L2 14"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  />
+                </svg>
+                Clear filter – show all messages
+              </button>
+            )}
+          </>
         ) : (
           <OverviewLayersPanel />
         )}

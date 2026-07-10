@@ -18,6 +18,8 @@ export function MessagesPanel() {
   const scrollToTweet = useStore((state) => state.scrollToTweet)
   const filters = useStore((state) => state.tweets.filters)
   const setFilter = useStore((state) => state.setFilter)
+  const filterByBounds = useStore((state) => state.tweets.filterByBounds)
+  const setFilterByBounds = useStore((state) => state.setFilterByBounds)
   const pagination = useStore((state) => state.tweets.pagination)
   const setPage = useStore((state) => state.setPage)
   const map = useStore((state) => state.map.instance)
@@ -556,6 +558,25 @@ export function MessagesPanel() {
               </div>
             )
           })
+        )}
+
+        {/* Clear "in view" filter, at the end of the list */}
+        {!isStoryView && filterByBounds && (
+          <button
+            type="button"
+            className="clear-bounds-filter"
+            onClick={() => setFilterByBounds(false, null)}
+          >
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+              <path
+                d="M2 2L14 14M14 2L2 14"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
+            </svg>
+            Clear filter – show all messages
+          </button>
         )}
       </div>
 
