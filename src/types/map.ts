@@ -21,6 +21,6 @@ export interface URLState {
   layers: string[]
   account?: string | undefined
   hashtag?: string | undefined
-  polygon?: string | undefined // geohash encoded
+  polygon?: string | undefined // GeoJSON string (or remote GeoJSON URL) of drawn shapes
   isPreview?: boolean | undefined
 }

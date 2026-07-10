@@ -19,6 +19,10 @@ interface AppState {
   setMapView: (center: Coordinates, zoom: number) => void
   setMapBounds: (bounds: LngLatBounds) => void
 
+  // Drawn shapes as a GeoJSON string (or remote GeoJSON URL) for URL sharing
+  drawings: string | null
+  setDrawings: (data: string | null) => void
+
   // Layer state
   layers: {
     visible: string[]
@@ -120,6 +124,10 @@ export const useStore = create<AppState>()(
         set((state) => ({
           map: { ...state.map, bounds },
         })),
+
+      // Drawings state
+      drawings: null,
+      setDrawings: (drawings) => set({ drawings }),
 
       // Layer state
       layers: {

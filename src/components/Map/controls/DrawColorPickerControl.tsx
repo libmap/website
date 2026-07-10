@@ -52,10 +52,12 @@ export class DrawColorPicker {
     this.paletteContainer = document.createElement('div')
     this.paletteContainer.className = 'draw-color-palette'
     this.paletteContainer.style.display = 'none'
+    // Toolbar is docked bottom-left, so open the palette to the right of the
+    // button, growing upward, to keep it inside the viewport
     this.paletteContainer.style.position = 'absolute'
-    this.paletteContainer.style.top = '0'
-    this.paletteContainer.style.right = '100%'
-    this.paletteContainer.style.marginRight = '8px'
+    this.paletteContainer.style.bottom = '0'
+    this.paletteContainer.style.left = '100%'
+    this.paletteContainer.style.marginLeft = '8px'
     this.paletteContainer.style.padding = '8px'
     this.paletteContainer.style.backgroundColor = 'white'
     this.paletteContainer.style.borderRadius = '4px'
@@ -63,7 +65,7 @@ export class DrawColorPicker {
     this.paletteContainer.style.display = 'none'
     this.paletteContainer.style.flexWrap = 'wrap'
     this.paletteContainer.style.gap = '4px'
-    this.paletteContainer.style.maxWidth = '176px'
+    this.paletteContainer.style.width = '176px'
     this.paletteContainer.style.zIndex = '1000'
 
     // Add color buttons to palette

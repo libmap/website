@@ -7,17 +7,20 @@ import {
   // MiniMapControl,
   GeocoderControl,
   ShareLinkControl,
+  type DrawColorPicker,
 } from './controls'
-// import { DrawControls } from './DrawControls'
+import type { MaplibreTerradrawControl } from '@watergis/maplibre-gl-terradraw'
+import { DrawControls } from './DrawControls'
 
-// import '@watergis/maplibre-gl-terradraw/dist/maplibre-gl-terradraw.css'
+import '@watergis/maplibre-gl-terradraw/dist/maplibre-gl-terradraw.css'
 
 export function MapControls() {
   const map = useStore((state) => state.map.instance)
   const setMapView = useStore((state) => state.setMapView)
   const selectTweet = useStore((state) => state.selectTweet)
+  const exitStoryView = useStore((state) => state.exitStoryView)
   const setFilter = useStore((state) => state.setFilter)
-  const setPage = useStore((state) => state.setPage)
+  const setOverviewPage = useStore((state) => state.setOverviewPage)
   const setStateBefore = useStore((state) => state.setStateBefore)
   const setVisibleTweetIds = useStore((state) => state.setVisibleTweetIds)
   const tweetsData = useStore((state) => state.tweets.data)
@@ -30,8 +33,8 @@ export function MapControls() {
     geocoder?: GeocoderControl
     geolocate?: maplibregl.GeolocateControl
     // minimap?: MiniMapControl
-    draw?: any
-    drawColorPicker?: any
+    draw?: MaplibreTerradrawControl
+    drawColorPicker?: DrawColorPicker
     homeButton?: HomeButtonControl
     globe?: maplibregl.GlobeControl
     shareLink?: ShareLinkControl
@@ -80,15 +83,16 @@ export function MapControls() {
 
     // Home button
     const homeButton = new HomeButtonControl(() => {
-      // Close tweet sidebar
+      // Close tweet sidebar and exit story view
       selectTweet(null)
+      exitStoryView()
 
       // Clear search filters
       setFilter('account', null)
       setFilter('hashtag', null)
 
       // Reset to page 1
-      setPage(1)
+      setOverviewPage(1)
 
       // Set visible layers to satellite and tweets only
       setVisibleLayers(['satellite', 'tweets'])
@@ -144,24 +148,33 @@ export function MapControls() {
     map.addControl(globeControl, 'top-right')
     controlsRef.current.globe = globeControl
 
-    // Cleanup
+    // Cleanup: only remove the controls this effect added — draw and
+    // drawColorPicker belong to DrawControls and must survive re-runs
+    const controls = controlsRef.current
     return () => {
-      if (controlsRef.current.navigation) map.removeControl(controlsRef.current.navigation)
-      if (controlsRef.current.scale) map.removeControl(controlsRef.current.scale)
-      if (controlsRef.current.geocoder) map.removeControl(controlsRef.current.geocoder)
-      if (controlsRef.current.geolocate) map.removeControl(controlsRef.current.geolocate)
-      // if (controlsRef.current.minimap) map.removeControl(controlsRef.current.minimap)
-      if (controlsRef.current.homeButton) map.removeControl(controlsRef.current.homeButton)
-      if (controlsRef.current.shareLink) map.removeControl(controlsRef.current.shareLink)
-      if (controlsRef.current.globe) map.removeControl(controlsRef.current.globe)
-      controlsRef.current = {}
+      if (controls.navigation) map.removeControl(controls.navigation)
+      if (controls.scale) map.removeControl(controls.scale)
+      if (controls.geocoder) map.removeControl(controls.geocoder)
+      if (controls.geolocate) map.removeControl(controls.geolocate)
+      // if (controls.minimap) map.removeControl(controls.minimap)
+      if (controls.homeButton) map.removeControl(controls.homeButton)
+      if (controls.shareLink) map.removeControl(controls.shareLink)
+      if (controls.globe) map.removeControl(controls.globe)
+      delete controls.navigation
+      delete controls.scale
+      delete controls.geocoder
+      delete controls.geolocate
+      delete controls.homeButton
+      delete controls.shareLink
+      delete controls.globe
     }
   }, [
     map,
     setMapView,
     selectTweet,
+    exitStoryView,
     setFilter,
-    setPage,
+    setOverviewPage,
     setStateBefore,
     setVisibleTweetIds,
     tweetsData,
@@ -169,7 +182,5 @@ export function MapControls() {
     setVisibleLayers,
   ])
 
-  // Draw controls temporarily disabled
-  return null
-  // return <DrawControls map={map} controlsRef={controlsRef} />
+  return <DrawControls map={map} controlsRef={controlsRef} />
 }

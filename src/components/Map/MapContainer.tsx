@@ -29,21 +29,22 @@ export function MapContainer() {
   const showOverviewBox = !isMobile && viewMode === 'overview'
   const showStoryViewer = !isMobile && viewMode === 'story'
 
-  // Initialize map once on mount
+  // Initialize map once on mount (initMap is guarded against double init)
   useEffect(() => {
-    if (!containerRef.current) return
+    const container = containerRef.current
+    if (!container) return
 
-    initMap(containerRef.current)
+    initMap(container)
 
     // Cleanup only on unmount
     return () => {
       // Only destroy if we're actually unmounting (not just re-rendering)
       // Check if the container is being removed from DOM
-      if (!document.body.contains(containerRef.current)) {
+      if (!document.body.contains(container)) {
         destroyMap()
       }
     }
-  }, []) // Empty deps - only run once
+  }, [initMap, destroyMap])
 
   // Sync URL on map move/zoom
   useEffect(() => {
@@ -59,12 +60,13 @@ export function MapContainer() {
     }
   }, [mapInstance, syncToUrl])
 
-  // Sync URL when layers change
+  // Sync URL when layers or drawn shapes change
   const visibleLayers = useStore((state) => state.layers.visible)
+  const drawings = useStore((state) => state.drawings)
   useEffect(() => {
     if (!mapInstance) return
     syncToUrl()
-  }, [mapInstance, visibleLayers, syncToUrl])
+  }, [mapInstance, visibleLayers, drawings, syncToUrl])
 
   // Adjust map padding when BottomSheet height changes (mobile only)
   useEffect(() => {

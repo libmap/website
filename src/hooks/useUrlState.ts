@@ -134,9 +134,11 @@ export function useUrlState() {
     setVisibleLayers,
     setFilter,
     setInitialized,
+    setDrawings,
     map,
     layers,
     tweets,
+    drawings,
   } = useStore()
 
   const initFromUrl = useCallback(() => {
@@ -158,10 +160,14 @@ export function useUrlState() {
       setFilter('hashtag', urlState.hashtag)
     }
 
+    if (urlState.polygon) {
+      setDrawings(urlState.polygon)
+    }
+
     setInitialized(true)
 
     return urlState
-  }, [setMapView, setVisibleLayers, setFilter, setInitialized])
+  }, [setMapView, setVisibleLayers, setFilter, setInitialized, setDrawings])
 
   const syncToUrl = useCallback(() => {
     const state: URLState = {
@@ -176,10 +182,13 @@ export function useUrlState() {
     if (tweets.filters.hashtag) {
       state.hashtag = tweets.filters.hashtag
     }
+    if (drawings) {
+      state.polygon = drawings
+    }
 
     const url = buildUrl(state)
     window.history.replaceState({}, '', url)
-  }, [map.center, map.zoom, layers.visible, tweets.filters])
+  }, [map.center, map.zoom, layers.visible, tweets.filters, drawings])
 
   /**
    * Apply view from a URL string (e.g., from a tweet's URL)
@@ -222,10 +231,15 @@ export function useUrlState() {
         setFilter('hashtag', urlState.hashtag)
       }
 
+      // Apply drawn shapes if specified
+      if (urlState.polygon) {
+        setDrawings(urlState.polygon)
+      }
+
       // Sync to URL
       syncToUrl()
     },
-    [setMapView, setVisibleLayers, setFilter, syncToUrl]
+    [setMapView, setVisibleLayers, setFilter, setDrawings, syncToUrl]
   )
 
   return { initFromUrl, syncToUrl, applyViewFromUrl, parseUrl, buildUrl }
